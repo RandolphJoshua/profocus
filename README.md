@@ -2,11 +2,13 @@
 
 A personal planner for doing fewer things, better. Built for one person (me), runs entirely in the browser, keeps data in localStorage.
 
-**Today**: pick one highlight, plan tasks, drag them onto a time-blocked day, run focus sessions, and close the day with a short shutdown ritual.
-**Week**: a 7-day calendar; drag unscheduled tasks onto any day, move and resize blocks across days.
-**Tasks**: inbox / today / upcoming / overdue, with projects and colours.
+**Today**: a two-minute *Plan my day* ritual (triage → highlight → block time), the day's tasks, a time-blocked timeline, focus sessions, habits, this week's three priorities, and a shutdown ritual. The greeting line carries the day's one fact, your planned-days streak and today's score.
+**Week**: a 7-day calendar with a *Plan my week* ritual (review last week → pick three priorities linked to goals → protect time for each). Drag tasks onto any day, move and resize blocks.
+**Tasks**: inbox / today / upcoming / overdue, with projects that roll up to goals.
+**Goals**: long-term goals with a why and a target date; progress from focus time, tasks done and weeks prioritised.
+**Focus mode**: one task, an intention line, the timer, nothing else; rate each session rough / ok / flow.
 **Habits**: weekly check-offs, streaks and a 4-week heatmap.
-**Review**: focus hours by day and project, highlights hit, habit consistency, and weekly reflection prompts.
+**Review**: daily scores (40 highlight · 30 focus vs plan · 15 habits · 15 tasks), focus by day and project, highlights hit, and reflection prompts.
 
 ## Quick-add
 
@@ -24,7 +26,9 @@ Draft essay intro 45m tomorrow @9am #writing !high
 | `@9am` `@14:30` | also time-blocks it at that time |
 | `!high` `!med` `!low` | priority |
 
-Keyboard: `N` quick-add, `1`–`6` switch views, `Space` start/pause the timer.
+Keyboard: `N` quick-add, `1`–`7` switch views, `Space` start/pause the timer, `Esc` leaves focus mode.
+
+Open `/?demo=1` on a fresh browser to see the app filled with sample data.
 
 ## Run it
 

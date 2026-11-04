@@ -10,3 +10,4 @@ coverage
 !.taste-skill/app/
 .taste-skill/app/*
 !.taste-skill/app/direction.json
+.env

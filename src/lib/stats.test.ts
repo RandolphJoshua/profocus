@@ -115,7 +115,8 @@ describe('goalProgress', () => {
       ],
       reviews: {
         '2026-11-02': { priorities: [{ id: 'a', title: '', goalId: 'g', done: false }] },
-        '2026-10-26': { priorities: [{ id: 'b', title: '', goalId: 'g', done: true }, { id: 'c', title: '', done: false }] },
+        '2026-10-26': { priorities: [{ id: 'b', title: '', goalId: 'g', done: true }, { id: 'c', title: '', goalId: 'g', done: false }] },
+        '2026-10-19': { priorities: [{ id: 'd', title: '', done: false }] },
       },
     };
     expect(goalProgress(s, 'g', '2026-11-04')).toEqual({

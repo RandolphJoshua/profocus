@@ -183,6 +183,6 @@ export function goalProgress(state: AppState, goalId: ID, today: DateKey): GoalP
   const tasks = state.tasks.filter((t) => t.projectId && inGoal.has(t.projectId));
   const tasksDone = tasks.filter((t) => t.done).length;
   const weeksPrioritised = Object.values(state.reviews)
-    .reduce((n, r) => n + (r.priorities?.filter((p) => p.goalId === goalId).length ?? 0), 0);
+    .reduce((n, r) => n + (r.priorities?.some((p) => p.goalId === goalId) ? 1 : 0), 0);
   return { goalId, focusMin30d, tasksDone, tasksOpen: tasks.length - tasksDone, weeksPrioritised, projects };
 }

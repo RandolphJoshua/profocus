@@ -41,7 +41,10 @@ export function PlanWeek({ week, onClose }: { week: DateKey; onClose: () => void
     setStep(step + 1);
   };
 
+  // A task with this title already in the week counts as added (survives closing and re-planning).
+  const hasTask = (p: WeekPriority) => state.tasks.some((t) => t.title === p.title.trim() && !!t.date && days.includes(t.date));
   const addTask = (p: WeekPriority) => {
+    if (hasTask(p)) return;
     const project = state.projects.find((x) => x.goalId === p.goalId && !x.archived && p.goalId);
     dispatch({
       type: 'ADD_TASK',
@@ -101,7 +104,7 @@ export function PlanWeek({ week, onClose }: { week: DateKey; onClose: () => void
           {filled.map((p) => (
             <div key={p.id} className="protect-row">
               <p className="protect-title">{p.title}</p>
-              {added[p.id] ? (
+              {added[p.id] || hasTask(p) ? (
                 <p className="muted">Added as a task on {formatDay(dayFor[p.id] ?? defaultDay, { weekday: 'long' })}</p>
               ) : (
                 <div className="row gap">

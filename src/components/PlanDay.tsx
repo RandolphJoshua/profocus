@@ -32,9 +32,10 @@ export function PlanDay({ onClose }: { onClose: () => void }) {
 
   const next = () => {
     if (step === 1) {
-      if (pick === 'free' && free.trim()) {
+      // Only reset "done" when the highlight actually changes; re-planning must not undo it.
+      if (pick === 'free' && free.trim() && free.trim() !== plan.highlight) {
         dispatch({ type: 'SET_DAY', date: today, patch: { highlight: free.trim(), highlightTaskId: undefined, highlightDone: false } });
-      } else if (pick && pick !== 'free') {
+      } else if (pick && pick !== 'free' && pick !== plan.highlightTaskId) {
         const t = state.tasks.find((x) => x.id === pick);
         if (t) dispatch({ type: 'SET_DAY', date: today, patch: { highlight: t.title, highlightTaskId: t.id, highlightDone: false } });
       }

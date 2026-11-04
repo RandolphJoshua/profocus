@@ -30,6 +30,8 @@ interface TimerValue extends TimerState {
   stopAndLog: () => void;
   setMode: (mode: TimerMode) => void;
   setTask: (taskId?: ID) => void;
+  /** Id of the most recently logged focus session (for rating it). */
+  lastSessionId?: ID;
 }
 
 const TIMER_KEY = 'profocus:timer';
@@ -84,6 +86,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     return { mode: 'focus', running: false, remainingMs: settings.focusMin * 60_000, plannedMin: settings.focusMin, cycleCount: 0 };
   });
   const [, force] = useState(0);
+  const [lastSessionId, setLastSessionId] = useState<ID | undefined>();
   const timerRef = useRef(timer);
   timerRef.current = timer;
 
@@ -108,19 +111,22 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     (minutes: number, t: TimerState) => {
       if (minutes < 1) return;
       const task = state.tasks.find((x) => x.id === t.taskId);
+      const id = uid('s-');
+      setLastSessionId(id);
       dispatch({
         type: 'LOG_SESSION',
         session: {
-          id: uid('s-'),
+          id,
           startedAt: t.startedAt ?? new Date().toISOString(),
           date: todayKey(),
           minutes,
           taskId: t.taskId,
           projectId: task?.projectId,
+          intention: state.days[todayKey()]?.intention || undefined,
         },
       });
     },
-    [dispatch, state.tasks],
+    [dispatch, state.tasks, state.days],
   );
 
   /** End the current interval. `completed` = it ran to zero (log it, chime); false = skipped. */
@@ -160,6 +166,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   const value = useMemo<TimerValue>(() => ({
     ...timer,
     remainingSec,
+    lastSessionId,
     start: (taskId) => {
       if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
         void Notification.requestPermission();
@@ -183,7 +190,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     },
     setMode: (mode) => setTimer((t) => ({ ...t, mode, running: false, endsAt: undefined, plannedMin: lengthOf(mode), remainingMs: lengthOf(mode) * 60_000, startedAt: undefined })),
     setTask: (taskId) => setTimer((t) => ({ ...t, taskId })),
-  }), [timer, remainingSec, finish, lengthOf, logFocus]);
+  }), [timer, remainingSec, lastSessionId, finish, lengthOf, logFocus]);
 
   return <TimerContext.Provider value={value}>{children}</TimerContext.Provider>;
 }

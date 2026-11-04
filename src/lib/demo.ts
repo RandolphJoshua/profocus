@@ -1,4 +1,4 @@
-import { addDays } from './date';
+import { addDays, startOfWeek } from './date';
 import { emptyState } from './storage';
 import type { AppState, DateKey, FocusSession, Task } from './types';
 
@@ -27,7 +27,8 @@ export function demoState(today: DateKey): AppState {
   const projects = ['p-writing', 'p-work', 'p-writing', 'p-work', 'p-health', 'p-writing', 'p-writing'];
   const sessions: FocusSession[] = mins.map((minutes, i) => {
     const date = addDays(today, i - 6);
-    return { id: `s${i + 1}`, startedAt: at(date, 9), date, minutes, projectId: projects[i], taskId: i === 6 ? 't1' : undefined };
+    const rating = i === 6 ? 3 : i === 5 ? 2 : undefined; // two rated sessions
+    return { id: `s${i + 1}`, startedAt: at(date, 9), date, minutes, projectId: projects[i], taskId: i === 6 ? 't1' : undefined, rating };
   });
 
   const habits = [
@@ -46,17 +47,34 @@ export function demoState(today: DateKey): AppState {
   const lines = ['Draft the pitch deck', 'Ship the budget review', 'Interview prep', 'Write 1,000 words'];
   const days: AppState['days'] = {};
   for (let i = 4; i >= 1; i--) {
-    days[addDays(today, -i)] = { highlight: lines[4 - i], highlightDone: i !== 2, energy: 3 + (i % 3) };
+    // The three days before today were planned, so with today the planning streak reads 4 days.
+    days[addDays(today, -i)] = { highlight: lines[4 - i], highlightDone: i !== 2, energy: 3 + (i % 3), plannedAt: i <= 3 ? at(addDays(today, -i), 8) : undefined };
   }
-  days[today] = { highlight: 'Finish chapter 3 outline', highlightTaskId: 't1', highlightDone: false };
+  days[today] = { highlight: 'Finish chapter 3 outline', highlightTaskId: 't1', highlightDone: false, plannedAt: at(today, 8) };
+
+  const week = startOfWeek(today, base.settings.weekStartsOn);
 
   return {
     ...base,
     projects: [
-      { id: 'p-writing', name: 'Writing', color: '#1b6e66' },
+      { id: 'p-writing', name: 'Writing', color: '#1b6e66', goalId: 'g-book' },
       { id: 'p-work', name: 'Work', color: '#3a7be0' },
-      { id: 'p-health', name: 'Health', color: '#c27a1a' },
+      { id: 'p-health', name: 'Health', color: '#c27a1a', goalId: 'g-fit' },
     ],
+    goals: [
+      { id: 'g-book', title: 'Finish the book draft', why: 'Send the manuscript to my editor', targetDate: addDays(today, 120), status: 'active', createdAt: created },
+      { id: 'g-fit', title: 'Get fitter', why: 'Energy for the long days', status: 'active', createdAt: created },
+    ],
+    reviews: {
+      [week]: {
+        plannedAt: at(week, 8),
+        priorities: [
+          { id: 'wp1', title: 'Outline chapters 3 and 4', goalId: 'g-book', done: true },
+          { id: 'wp2', title: 'Walk or run three times', goalId: 'g-fit', done: false },
+          { id: 'wp3', title: 'Close out the Q4 budget review', done: false },
+        ],
+      },
+    },
     tasks,
     blocks: [
       { id: 'b1', date: today, start: 540, end: 630, title: 'Finish chapter 3 outline', kind: 'focus', taskId: 't1', projectId: 'p-writing' },

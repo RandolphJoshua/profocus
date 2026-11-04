@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { addDays, formatDay, formatDuration, shortWeekday, startOfWeek } from '../lib/date';
-import { weekStats } from '../lib/stats';
+import { weekScores, weekStats } from '../lib/stats';
 import { useStore, useToday } from '../state/store';
 
 export function ReviewView() {
@@ -8,6 +8,9 @@ export function ReviewView() {
   const today = useToday();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today, state.settings.weekStartsOn));
   const stats = weekStats(state, weekStart, today);
+  const scores = weekScores(state, weekStart, today);
+  const elapsed = scores.filter((s) => s.date <= today);
+  const mean = elapsed.length ? Math.round(elapsed.reduce((n, s) => n + s.score, 0) / elapsed.length) : undefined;
   const review = state.reviews[weekStart] ?? {};
   const maxDay = Math.max(60, ...stats.focusByDay);
   const maxProj = Math.max(1, ...stats.focusByProject.map((p) => p.minutes));
@@ -34,6 +37,17 @@ export function ReviewView() {
         <div className="stat"><span className="stat-label">Highlights hit</span><span className="stat-num num">{stats.highlightsDone}<small>/{stats.highlightsSet || 0}</small></span></div>
         <div className="stat"><span className="stat-label">Habit consistency</span><span className="stat-num num">{Math.round(stats.habitRate * 100)}%</span></div>
       </div>
+
+      <section className="panel score-panel" aria-label="Daily scores">
+        <h2 className="panel-title">Daily scores</h2>
+        <div className="score-strip">
+          <div className="score-cell is-mean"><span className="score-label">Week</span><span className="score-num num">{mean ?? '—'}</span></div>
+          {scores.map((s) => (
+            <div key={s.date} className="score-cell"><span className="score-label">{shortWeekday(s.date)}</span><span className="score-num num">{s.date <= today ? s.score : '—'}</span></div>
+          ))}
+        </div>
+        <p className="hint">40 highlight · 30 focus vs plan · 15 habits · 15 tasks</p>
+      </section>
 
       <div className="review-grid">
         <section className="card">

@@ -131,7 +131,7 @@ export function SettingsView() {
         <div className="setting-body stack">
         <dl className="shortcuts">
           <dt><kbd>N</kbd></dt><dd>Quick-add a task</dd>
-          <dt><kbd>1</kbd>–<kbd>6</kbd></dt><dd>Switch view</dd>
+          <dt><kbd>1</kbd>–<kbd>7</kbd></dt><dd>Switch view</dd>
           <dt><kbd>Space</kbd></dt><dd>Start / pause the focus timer</dd>
         </dl>
         <h3 className="card-title">Quick-add syntax</h3>

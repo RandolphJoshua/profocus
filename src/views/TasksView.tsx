@@ -76,7 +76,8 @@ export function TasksView() {
             {state.projects.filter((p) => !p.archived).map((p) => {
               const open = state.tasks.filter((t) => t.projectId === p.id && !t.done).length;
               return (
-                <li key={p.id} className="proj-row">
+                <li key={p.id} className="proj-block">
+                <div className="proj-row">
                   <input
                     type="color"
                     value={p.color}
@@ -87,6 +88,15 @@ export function TasksView() {
                     <i className="dot" style={{ background: p.color }} />{p.name} <small className="muted num">{open || ''}</small>
                   </button>
                   <button type="button" className="icon-btn" title="Archive project" aria-label={`Archive ${p.name}`} onClick={() => dispatch({ type: 'UPDATE_PROJECT', id: p.id, patch: { archived: true } })}>⌫</button>
+                </div>
+                {state.goals.length > 0 && (
+                  <label className="proj-goal">
+                    <select value={p.goalId ?? ''} aria-label={`Goal for ${p.name}`} onChange={(e) => dispatch({ type: 'UPDATE_PROJECT', id: p.id, patch: { goalId: e.target.value || undefined } })}>
+                      <option value="">Goal: —</option>
+                      {state.goals.filter((g) => g.status !== 'done' || g.id === p.goalId).map((g) => <option key={g.id} value={g.id}>Goal: {g.title}</option>)}
+                    </select>
+                  </label>
+                )}
                 </li>
               );
             })}

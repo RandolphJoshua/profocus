@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { PlanWeek } from '../components/PlanWeek';
+import { WeekPriorities } from '../components/WeekPriorities';
 import { BlockEditor, newDraft, type BlockDraft } from '../components/BlockEditor';
 import { DayColumn, TimeGutter } from '../components/DayColumn';
 import { addDays, formatDay, formatDuration, shortWeekday, startOfWeek, weekDays } from '../lib/date';
@@ -13,6 +15,7 @@ export function WeekView() {
   const today = useToday();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today, state.settings.weekStartsOn));
   const [draft, setDraft] = useState<BlockDraft | null>(null);
+  const [planning, setPlanning] = useState(false);
   const days = weekDays(weekStart);
   const end = days[6] ?? weekStart;
 
@@ -36,7 +39,12 @@ export function WeekView() {
           <button type="button" className="btn" onClick={() => setWeekStart(startOfWeek(today, state.settings.weekStartsOn))}>This week</button>
           <button type="button" className="btn" onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Next week">→</button>
         </div>
+        <button type="button" className="btn primary" onClick={() => setPlanning(true)}>
+          {state.reviews[weekStart]?.plannedAt ? 'Re-plan' : 'Plan my week'}
+        </button>
       </header>
+
+      {(state.reviews[weekStart]?.priorities?.length ?? 0) > 0 && <WeekPriorities week={weekStart} />}
 
       <div className="week-layout">
         <aside className="card week-tray">
@@ -92,6 +100,7 @@ export function WeekView() {
         </div>
       </div>
 
+      {planning && <PlanWeek week={weekStart} onClose={() => setPlanning(false)} />}
       {draft && <BlockEditor key={draft.id ?? 'new'} draft={draft} onClose={() => setDraft(null)} />}
     </div>
   );

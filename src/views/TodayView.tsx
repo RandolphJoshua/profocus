@@ -2,10 +2,12 @@ import { useState, type CSSProperties, type Ref } from 'react';
 import { BlockEditor, newDraft, type BlockDraft } from '../components/BlockEditor';
 import { DayColumn, TimeGutter } from '../components/DayColumn';
 import { FocusTimer } from '../components/FocusTimer';
+import { PlanDay } from '../components/PlanDay';
 import { QuickAdd } from '../components/QuickAdd';
 import { TaskItem } from '../components/TaskItem';
-import { addDays, formatDay, formatDuration } from '../lib/date';
-import { focusMinutesOn, habitStreak } from '../lib/stats';
+import { WeekPriorities } from '../components/WeekPriorities';
+import { addDays, formatDay, formatDuration, startOfWeek } from '../lib/date';
+import { dayScore, focusMinutesOn, habitStreak, plannedStreak } from '../lib/stats';
 import type { DayPlan, Task } from '../lib/types';
 import { useStore, useToday } from '../state/store';
 
@@ -24,6 +26,7 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
   const today = useToday();
   const [draft, setDraft] = useState<BlockDraft | null>(null);
   const [showDone, setShowDone] = useState(false);
+  const [planning, setPlanning] = useState(false);
   const plan = state.days[today] ?? {};
   const tomorrow = addDays(today, 1);
 
@@ -43,11 +46,15 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
   // The greeting's one fact for the day.
   const dateLabel = formatDay(today, { weekday: 'long', day: 'numeric', month: 'long' });
   const nothingPlanned = !plan.highlight && open.length === 0 && done.length === 0 && state.blocks.every((b) => b.date !== today);
-  const fact = nothingPlanned
+  const streak = plannedStreak(state, today);
+  const score = dayScore(state, today);
+  const hasData = score.planned || score.highlightSet || score.focusMin > 0 || score.tasksDone > 0 || score.habitsDone > 0;
+  const baseFact = nothingPlanned
     ? `${dateLabel} · nothing planned yet`
     : plan.highlight && highlightDone
       ? `${dateLabel} · highlight done · ${formatDuration(focusMin)} focused`
       : `${dateLabel} · ${plan.highlight ? 'highlight still open' : 'no highlight yet'} · ${formatDuration(blockedMin)} blocked`;
+  const fact = `${baseFact}${streak > 0 ? ` · planned ${streak} ${streak === 1 ? 'day' : 'days'} in a row` : ''}${hasData ? ` · score ${score.score}` : ''}`;
 
   const setDay = (patch: Partial<DayPlan>, date = today) =>
     dispatch({ type: 'SET_DAY', date, patch });
@@ -55,8 +62,13 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
   return (
     <div className="today">
       <header className="today-head">
-        <h1 className="greeting">{greeting(new Date().getHours())}.</h1>
-        <p className="sub">{fact}</p>
+        <div>
+          <h1 className="greeting">{greeting(new Date().getHours())}.</h1>
+          <p className="sub num">{fact}</p>
+        </div>
+        <button type="button" className={plan.plannedAt ? 'btn ghost' : 'btn primary'} onClick={() => setPlanning(true)}>
+          {plan.plannedAt ? 'Re-plan' : 'Plan my day'}
+        </button>
       </header>
 
       <div className="tiles">
@@ -134,6 +146,8 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
             )}
           </article>
 
+          <WeekPriorities week={startOfWeek(today, state.settings.weekStartsOn)} />
+
           {habits.length > 0 && (
             <section className="panel">
               <h2 className="panel-title">Habits</h2>
@@ -210,6 +224,7 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
         </div>
       </div>
 
+      {planning && <PlanDay onClose={() => setPlanning(false)} />}
       {draft && <BlockEditor key={draft.id ?? 'new'} draft={draft} onClose={() => setDraft(null)} />}
     </div>
   );

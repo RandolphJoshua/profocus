@@ -74,6 +74,9 @@ export function FocusTimer({ compact = false }: { compact?: boolean }) {
           <button type="button" className="btn" onClick={timer.stopAndLog} title="Stop now and log the minutes you did">Stop &amp; log</button>
         )}
         {!compact && <button type="button" className="btn ghost" onClick={timer.skip}>Skip</button>}
+        {timer.mode === 'focus' && (
+          <button type="button" className={compact ? 'btn ghost' : 'btn'} onClick={() => { window.location.hash = 'focus'; }}>Focus mode</button>
+        )}
       </div>
 
       {!compact && (

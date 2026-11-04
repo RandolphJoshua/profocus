@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FocusTimer } from './components/FocusTimer';
 import { useStore } from './state/store';
+import { useSync } from './state/sync';
 import { useTimer } from './state/timer';
 import { FocusMode } from './views/FocusMode';
 import { GoalsView } from './views/GoalsView';
@@ -50,6 +51,7 @@ const viewFromHash = (): ViewId => {
 export function App() {
   const { state } = useStore();
   const timer = useTimer();
+  const sync = useSync();
   const [view, setView] = useState<ViewId>(viewFromHash);
   // #focus is an overlay on top of whichever view was open before it.
   const [focus, setFocus] = useState(isFocusHash);
@@ -130,6 +132,11 @@ export function App() {
           </ul>
         </nav>
         {view !== 'today' && <div className="sidebar-timer"><FocusTimer compact /></div>}
+        {sync.status !== 'off' && (
+          <p className="sync-line" role="status">
+            {sync.status === 'syncing' ? 'Syncing…' : sync.status === 'error' ? 'Sync error' : 'Synced'}
+          </p>
+        )}
       </aside>
 
       <main id="main" className={`main view-${view}`} hidden={focus}>

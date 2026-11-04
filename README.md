@@ -39,7 +39,18 @@ npm run dev
 
 Then open http://localhost:5173. `npm run build` produces a static site in `dist/` you can host anywhere (Vercel, Netlify, GitHub Pages).
 
-Back up from **Settings → Export JSON**. Data never leaves your browser.
+Back up from **Settings → Export JSON**. Without an account, data never leaves your browser.
+
+## Optional account and cloud sync
+
+Sign in (Google or a magic link) from **Settings → Account** and your whole planner is mirrored to a single row in Supabase, so it follows you across devices. Signed out, the app is local-only as before. The build needs two publishable values:
+
+```
+VITE_SUPABASE_URL=https://<project>.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…
+```
+
+Locally they go in `.env.local` (git-ignored); on Vercel, in the project's Environment Variables. The database side is one table, `public.planner_state`, with row-level security so each user can only read and write their own row (migration applied via Supabase; see `.taste-skill/plan-sync.md`).
 
 ## Development
 

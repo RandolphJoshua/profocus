@@ -536,3 +536,13 @@ code { font: inherit; font-size: var(--fs-small); background: var(--surface); bo
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 body:has(.app.is-focus) { background: var(--surface); }
+
+/* ---------- account + sync ---------- */
+.sync-line { margin: auto 0 0; padding: 0 12px; font-size: 12px; line-height: 16px; color: var(--muted); }
+.sidebar-timer + .sync-line { margin-top: 8px; }
+.sync-error { color: var(--negative); }
+.account-form { align-items: flex-end; }
+.account-email { flex: 1 1 200px; }
+@media (max-width: 760px) {
+  .sync-line { display: none; }
+}

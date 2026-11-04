@@ -4,7 +4,9 @@ import { App } from './App';
 import { demoState } from './lib/demo';
 import { todayKey } from './lib/date';
 import { STORAGE_KEY } from './lib/storage';
+import { AuthProvider } from './state/auth';
 import { StoreProvider } from './state/store';
+import { SyncProvider } from './state/sync';
 import { TimerProvider } from './state/timer';
 import './styles.css';
 
@@ -23,9 +25,13 @@ const wantsDemo = (() => {
 createRoot(root).render(
   <StrictMode>
     <StoreProvider initial={wantsDemo ? demoState(todayKey()) : undefined}>
-      <TimerProvider>
-        <App />
-      </TimerProvider>
+      <AuthProvider>
+        <SyncProvider>
+          <TimerProvider>
+            <App />
+          </TimerProvider>
+        </SyncProvider>
+      </AuthProvider>
     </StoreProvider>
   </StrictMode>,
 );

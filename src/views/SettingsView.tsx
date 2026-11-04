@@ -2,7 +2,63 @@ import { useRef, useState } from 'react';
 import { todayKey } from '../lib/date';
 import { emptyState, normalizeState } from '../lib/storage';
 import type { Settings, Theme } from '../lib/types';
+import { useAuth } from '../state/auth';
 import { useStore } from '../state/store';
+import { useSync } from '../state/sync';
+
+function AccountSection() {
+  const { user, status, signInWithGoogle, sendMagicLink, signOut } = useAuth();
+  const sync = useSync();
+  const [email, setEmail] = useState('');
+  const [note, setNote] = useState('');
+  const [failed, setFailed] = useState(false);
+  const report = (err: string | undefined, ok = '') => {
+    setFailed(Boolean(err));
+    setNote(err ?? ok);
+  };
+  const lastSaved = sync.lastSyncAt ? new Date(sync.lastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  return (
+    <section className="setting">
+      <div>
+        <h2 className="panel-title">Account</h2>
+        <p className="muted">Optional. Sync your data across devices.</p>
+      </div>
+      <div className="setting-body stack">
+        {status === 'disabled' && <p className="muted">Cloud sync is not configured on this build.</p>}
+        {status === 'loading' && <p className="muted">Checking your session…</p>}
+        {status === 'signed-out' && (
+          <>
+            <form
+              className="row gap account-form"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                report(await sendMagicLink(email.trim()), 'Check your email for the link.');
+              }}
+            >
+              <label className="account-email">Email<input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></label>
+              <button type="submit" className="btn">Send magic link</button>
+            </form>
+            <div className="row gap">
+              <button type="button" className="btn" onClick={async () => report(await signInWithGoogle())}>Continue with Google</button>
+            </div>
+            {note && <p role="status" className={failed ? 'sync-error' : 'muted'}>{note}</p>}
+          </>
+        )}
+        {status === 'signed-in' && (
+          <>
+            <p>{user?.email}</p>
+            <p role="status" className={sync.status === 'error' ? 'sync-error' : 'muted'}>
+              {sync.status === 'error' ? sync.error : sync.status === 'syncing' ? 'Syncing…' : `Synced · last saved ${lastSaved}`}
+            </p>
+            <div className="row gap">
+              <button type="button" className="link-btn" onClick={() => void signOut()}>Sign out</button>
+            </div>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
 
 export function SettingsView() {
   const { state, dispatch } = useStore();
@@ -27,6 +83,8 @@ export function SettingsView() {
         <h1>Settings</h1>
         <p className="sub">Stored in this browser only.</p>
       </header>
+
+      <AccountSection />
 
       <section className="setting">
         <div>

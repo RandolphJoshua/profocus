@@ -1,6 +1,7 @@
 import type { AppState, Settings } from './types';
 
 export const STORAGE_KEY = 'profocus:v1';
+export const SAVED_AT_KEY = 'profocus:savedAt';
 
 export const DEFAULT_SETTINGS: Settings = {
   focusMin: 25,
@@ -79,9 +80,18 @@ export function loadState(storage: Pick<Storage, 'getItem'> = localStorage): App
   }
 }
 
+export function loadSavedAt(storage: Pick<Storage, 'getItem'> = localStorage): string | undefined {
+  try {
+    return storage.getItem(SAVED_AT_KEY) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function saveState(state: AppState, storage: Pick<Storage, 'setItem'> = localStorage): void {
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify(state));
+    storage.setItem(SAVED_AT_KEY, new Date().toISOString());
   } catch {
     // Storage full or blocked (private mode). The app keeps working in memory.
   }

@@ -89,7 +89,7 @@ export function BlockEditor({ draft, onClose }: { draft: BlockDraft; onClose: ()
               save();
               if (timer.mode !== 'focus') timer.setMode('focus');
               timer.start(b.taskId);
-            }}>▶ Start focus</button>
+            }}>Start focus</button>
           )}
           <span className="spacer" />
           {!isNew && (

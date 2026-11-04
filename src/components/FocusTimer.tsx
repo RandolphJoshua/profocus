@@ -44,7 +44,7 @@ export function FocusTimer({ compact = false }: { compact?: boolean }) {
           />
         </svg>
         <div className="timer-readout">
-          <span className="timer-clock" role="timer" aria-live="off">{formatClock(timer.remainingSec)}</span>
+          <span className="timer-clock num" role="timer" aria-live="off">{formatClock(timer.remainingSec)}</span>
           <span className="timer-label">{LABELS[timer.mode]}</span>
         </div>
       </div>
@@ -77,7 +77,7 @@ export function FocusTimer({ compact = false }: { compact?: boolean }) {
       </div>
 
       {!compact && (
-        <p className="timer-foot muted">
+        <p className="timer-foot muted num">
           {formatDuration(todayMin)} focused today · session {(timer.cycleCount % state.settings.longBreakEvery) + 1} of {state.settings.longBreakEvery}
         </p>
       )}

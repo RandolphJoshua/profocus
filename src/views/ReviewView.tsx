@@ -17,8 +17,8 @@ export function ReviewView() {
     <div className="review-page">
       <header className="page-head row">
         <div>
-          <p className="eyebrow">Weekly review</p>
-          <h1 className="display">{formatDay(weekStart, { month: 'long', day: 'numeric' })} – {formatDay(addDays(weekStart, 6), { month: 'short', day: 'numeric' })}</h1>
+          <h1>Review</h1>
+          <p className="sub num">{formatDay(weekStart, { month: 'long', day: 'numeric' })} – {formatDay(addDays(weekStart, 6), { month: 'short', day: 'numeric' })}</p>
         </div>
         <span className="spacer" />
         <div className="row gap">
@@ -28,11 +28,11 @@ export function ReviewView() {
         </div>
       </header>
 
-      <div className="stat-row">
-        <div className="stat"><span className="stat-num">{formatDuration(stats.focusTotal)}</span><span className="stat-label">focused</span></div>
-        <div className="stat"><span className="stat-num">{stats.tasksCompleted}</span><span className="stat-label">tasks done</span></div>
-        <div className="stat"><span className="stat-num">{stats.highlightsDone}<small>/{stats.highlightsSet || 0}</small></span><span className="stat-label">highlights hit</span></div>
-        <div className="stat"><span className="stat-num">{Math.round(stats.habitRate * 100)}%</span><span className="stat-label">habit consistency</span></div>
+      <div className="stat-row panel">
+        <div className="stat"><span className="stat-label">Focused</span><span className="stat-num num">{formatDuration(stats.focusTotal)}</span></div>
+        <div className="stat"><span className="stat-label">Tasks done</span><span className="stat-num num">{stats.tasksCompleted}</span></div>
+        <div className="stat"><span className="stat-label">Highlights hit</span><span className="stat-num num">{stats.highlightsDone}<small>/{stats.highlightsSet || 0}</small></span></div>
+        <div className="stat"><span className="stat-label">Habit consistency</span><span className="stat-num num">{Math.round(stats.habitRate * 100)}%</span></div>
       </div>
 
       <div className="review-grid">
@@ -43,7 +43,7 @@ export function ReviewView() {
               const m = stats.focusByDay[i] ?? 0;
               return (
                 <div key={d} className={`bar ${d === today ? 'is-today' : ''}`} role="listitem" aria-label={`${formatDay(d)}: ${formatDuration(m)}`}>
-                  <span className="bar-val">{m ? formatDuration(m) : ''}</span>
+                  <span className="bar-val num">{m ? formatDuration(m) : ''}</span>
                   <span className="bar-fill" style={{ height: `${(m / maxDay) * 100}%` }} />
                   <span className="bar-lbl">{shortWeekday(d)}</span>
                 </div>
@@ -60,9 +60,9 @@ export function ReviewView() {
               const p = state.projects.find((x) => x.id === projectId);
               return (
                 <li key={projectId ?? 'none'}>
-                  <span className="hbar-name">{p?.name ?? 'No project'}</span>
-                  <span className="hbar-track"><span style={{ width: `${(minutes / maxProj) * 100}%`, background: p?.color ?? 'var(--muted)' }} /></span>
-                  <span className="hbar-val">{formatDuration(minutes)}</span>
+                  <span className="hbar-name"><i className="dot" style={{ background: p?.color ?? 'var(--faint)' }} />{p?.name ?? 'No project'}</span>
+                  <span className="hbar-track"><span style={{ width: `${(minutes / maxProj) * 100}%` }} /></span>
+                  <span className="hbar-val num">{formatDuration(minutes)}</span>
                 </li>
               );
             })}
@@ -78,7 +78,7 @@ export function ReviewView() {
                 <li key={d} className={p?.highlightDone ? 'is-done' : ''}>
                   <span className="muted">{shortWeekday(d)}</span>
                   <span>{p?.highlight ?? <em className="muted">—</em>}</span>
-                  {p?.energy && <span title={`Energy ${p.energy}/5`}>{['😮‍💨', '😕', '🙂', '😊', '⚡'][p.energy - 1]}</span>}
+                  {p?.energy && <span className="muted num" title={`Energy ${p.energy}/5`}>{p.energy}/5</span>}
                 </li>
               );
             })}

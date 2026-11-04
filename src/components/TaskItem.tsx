@@ -31,7 +31,7 @@ export function TaskItem({ task, showDate, canHighlight }: TaskItemProps) {
         e.dataTransfer.setData('text/profocus-task', task.id);
         e.dataTransfer.effectAllowed = 'copy';
       }}
-      style={project ? ({ '--proj': project.color } as CSSProperties) : undefined}
+      style={project ? ({ '--c': project.color } as CSSProperties) : undefined}
     >
       <div className="task-row">
         <button
@@ -43,13 +43,13 @@ export function TaskItem({ task, showDate, canHighlight }: TaskItemProps) {
           onClick={() => dispatch({ type: 'TOGGLE_TASK', id: task.id, now: new Date().toISOString() })}
         />
         <button type="button" className="task-title" onClick={() => setEditing((v) => !v)} aria-expanded={editing}>
-          {task.title}
+          {project && <i className="dot" />}{task.title}
         </button>
         <div className="task-meta">
           {task.priority && <span className={`prio-dot prio-${task.priority}`} title={`${task.priority} priority`} />}
-          {project && <span className="tag"><i style={{ background: project.color }} />{project.name}</span>}
+          {project && <span className="tag">{project.name}</span>}
           {task.estimateMin ? (
-            <span className="muted">{focused ? `${formatDuration(focused)} / ` : ''}{formatDuration(task.estimateMin)}</span>
+            <span className="muted num">{focused ? `${formatDuration(focused)} / ` : ''}{formatDuration(task.estimateMin)}</span>
           ) : focused ? <span className="muted">{formatDuration(focused)}</span> : null}
           {showDate && task.date && <span className={overdue ? 'overdue' : 'muted'}>{relativeLabel(task.date, today)}</span>}
         </div>
@@ -63,7 +63,9 @@ export function TaskItem({ task, showDate, canHighlight }: TaskItemProps) {
               if (timer.mode !== 'focus') timer.setMode('focus');
               timer.start(task.id);
             }}
-          >▶</button>
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden><path d="M3 1.8v8.4L10 6z" fill="currentColor" /></svg>
+          </button>
         )}
       </div>
 
@@ -98,7 +100,7 @@ export function TaskItem({ task, showDate, canHighlight }: TaskItemProps) {
               <button type="button" className="btn" onClick={() => {
                 dispatch({ type: 'SET_DAY', date: today, patch: { highlight: task.title, highlightTaskId: task.id, highlightDone: false } });
                 if (task.date !== today) update({ date: today });
-              }}>★ Make today’s highlight</button>
+              }}>Make today’s highlight</button>
             )}
             <button type="button" className="btn" onClick={() => update({ date: undefined })}>Move to inbox</button>
             <span className="spacer" />

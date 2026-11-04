@@ -4,12 +4,6 @@ import type { DateKey, ID, TimeBlock } from '../lib/types';
 import { useNow, useStore } from '../state/store';
 
 export const SNAP = 15;
-export const KIND_COLORS: Record<TimeBlock['kind'], string> = {
-  focus: '#e0603a',
-  meeting: '#3a7be0',
-  personal: '#2f9e6e',
-  break: '#8a8a8a',
-};
 
 interface DayColumnProps {
   date: DateKey;
@@ -111,7 +105,7 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
       ref={colRef}
       className={`day-col ${isToday ? 'is-today' : ''}`}
       data-day={date}
-      style={{ height, '--hour': `${hourHeight}px` } as CSSProperties}
+      style={{ height } as CSSProperties}
       onPointerDown={(e) => {
         const at = clamp(snap(minAt(e.clientY) - SNAP / 2), dayStart, dayEnd - SNAP);
         startDrag(e, { mode: 'create', anchor: at, current: at + SNAP });
@@ -139,18 +133,18 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
         });
       }}
     >
+      {Array.from({ length: dayEndHour - dayStartHour + 1 }, (_, i) => <i key={i} className="hour-line" style={{ top: i * hourHeight }} aria-hidden />)}
       {blocks.map((b) => {
         const task = b.taskId ? state.tasks.find((t) => t.id === b.taskId) : undefined;
         const project = state.projects.find((p) => p.id === (b.projectId ?? task?.projectId));
-        const color = project?.color ?? KIND_COLORS[b.kind];
-        const top = (Math.max(b.start, dayStart) - dayStart) * pxPerMin;
+                const top = (Math.max(b.start, dayStart) - dayStart) * pxPerMin;
         const h = Math.max((Math.min(b.end, dayEnd) - Math.max(b.start, dayStart)) * pxPerMin, 14);
         const short = b.end - b.start <= 30;
         return (
           <div
             key={b.id}
             className={`block kind-${b.kind} ${task?.done ? 'is-done' : ''} ${short ? 'is-short' : ''}`}
-            style={{ top, height: h, '--c': color } as CSSProperties}
+            style={{ top, height: h, '--c': project?.color } as CSSProperties}
             onPointerDown={(e) => startDrag(e, { mode: 'move', id: b.id, grabOffset: minAt(e.clientY) - b.start, moved: false })}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -162,8 +156,8 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
             tabIndex={0}
             aria-label={`${b.title}, ${formatMinutes(b.start)} to ${formatMinutes(b.end)}`}
           >
-            <span className="block-title">{b.title || 'Untitled'}</span>
-            <span className="block-time">{formatMinutes(b.start)} – {formatMinutes(b.end)}</span>
+            <span className="block-title">{project && <i className="dot" />}{b.title || 'Untitled'}</span>
+            <span className="block-time num">{formatMinutes(b.start)} – {formatMinutes(b.end)}</span>
             <span
               className="block-resize"
               onPointerDown={(e) => startDrag(e, { mode: 'resize', id: b.id, grabOffset: 0, moved: false })}
@@ -175,12 +169,14 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
 
       {ghost && (
         <div className="block ghost" style={{ top: (ghost.start - dayStart) * pxPerMin, height: (ghost.end - ghost.start) * pxPerMin }}>
-          <span className="block-time">{formatMinutes(ghost.start)} – {formatMinutes(ghost.end)}</span>
+          <span className="block-time num">{formatMinutes(ghost.start)} – {formatMinutes(ghost.end)}</span>
         </div>
       )}
       {dropAt !== null && <div className="drop-line" style={{ top: (dropAt - dayStart) * pxPerMin }}><span>{formatMinutes(dropAt)}</span></div>}
       {isToday && nowMin >= dayStart && nowMin <= dayEnd && (
-        <div className="now-line" style={{ top: (nowMin - dayStart) * pxPerMin }} aria-hidden />
+        <div className="now-line" style={{ top: (nowMin - dayStart) * pxPerMin }} aria-hidden>
+          <span className="now-time num">{formatMinutes(nowMin)}</span>
+        </div>
       )}
     </div>
   );

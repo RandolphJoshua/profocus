@@ -24,12 +24,16 @@ export function SettingsView() {
   return (
     <div className="settings-page">
       <header className="page-head">
-        <p className="eyebrow">Make it yours</p>
-        <h1 className="display">Settings</h1>
+        <h1>Settings</h1>
+        <p className="sub">Stored in this browser only.</p>
       </header>
 
-      <section className="card stack">
-        <h2 className="card-title">Focus timer</h2>
+      <section className="setting">
+        <div>
+          <h2 className="panel-title">Focus timer</h2>
+          <p className="muted">Session and break lengths.</p>
+        </div>
+        <div className="setting-body stack">
         <div className="grid-4">
           <label>Focus (min)<input type="number" min={5} max={180} value={s.focusMin} onChange={(e) => set({ focusMin: num(e.target.value, 1, 180) })} /></label>
           <label>Short break<input type="number" min={1} max={60} value={s.shortBreakMin} onChange={(e) => set({ shortBreakMin: num(e.target.value, 1, 60) })} /></label>
@@ -37,10 +41,15 @@ export function SettingsView() {
           <label>Long break every<input type="number" min={2} max={10} value={s.longBreakEvery} onChange={(e) => set({ longBreakEvery: num(e.target.value, 2, 10) })} /></label>
         </div>
         <label className="row gap check-label"><input type="checkbox" checked={s.sound} onChange={(e) => set({ sound: e.target.checked })} /> Play a chime when a session ends</label>
+        </div>
       </section>
 
-      <section className="card stack">
-        <h2 className="card-title">Calendar</h2>
+      <section className="setting">
+        <div>
+          <h2 className="panel-title">Calendar</h2>
+          <p className="muted">The hours your day grid shows, and the look of the app.</p>
+        </div>
+        <div className="setting-body stack">
         <div className="grid-4">
           <label>Day starts
             <select value={s.dayStartHour} onChange={(e) => set({ dayStartHour: Math.min(Number(e.target.value), s.dayEndHour - 1) })}>
@@ -66,10 +75,15 @@ export function SettingsView() {
             </select>
           </label>
         </div>
+        </div>
       </section>
 
-      <section className="card stack">
-        <h2 className="card-title">Your data</h2>
+      <section className="setting">
+        <div>
+          <h2 className="panel-title">Your data</h2>
+          <p className="muted">Backups and resets.</p>
+        </div>
+        <div className="setting-body stack">
         <p className="muted">Everything lives in this browser (localStorage). Export a backup now and then, or to move to another device.</p>
         <div className="row gap">
           <button type="button" className="btn" onClick={exportData}>Export JSON</button>
@@ -106,10 +120,15 @@ export function SettingsView() {
           >Reset everything</button>
         </div>
         {msg && <p role="status" className="muted">{msg}</p>}
+        </div>
       </section>
 
-      <section className="card stack">
-        <h2 className="card-title">Shortcuts</h2>
+      <section className="setting">
+        <div>
+          <h2 className="panel-title">Shortcuts</h2>
+          <p className="muted">Keys that work anywhere outside a text field.</p>
+        </div>
+        <div className="setting-body stack">
         <dl className="shortcuts">
           <dt><kbd>N</kbd></dt><dd>Quick-add a task</dd>
           <dt><kbd>1</kbd>–<kbd>6</kbd></dt><dd>Switch view</dd>
@@ -123,6 +142,7 @@ export function SettingsView() {
           <dt><code>@9am</code> <code>@14:30</code></dt><dd>Time-block it at that time</dd>
           <dt><code>!high</code> <code>!med</code> <code>!low</code></dt><dd>Priority</dd>
         </dl>
+        </div>
       </section>
     </div>
   );

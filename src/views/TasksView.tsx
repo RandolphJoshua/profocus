@@ -46,8 +46,8 @@ export function TasksView() {
   return (
     <div className="tasks-page">
       <header className="page-head">
-        <p className="eyebrow">Capture everything, then decide</p>
-        <h1 className="display">Tasks</h1>
+        <h1>Tasks</h1>
+        <p className="sub num">{count('all')} open · {count('inbox')} in inbox</p>
       </header>
 
       <QuickAdd defaultDate={filter === 'today' ? today : undefined} placeholder="Capture a task…  “#project”, “tomorrow”, “30m”, “!high”, “@3pm” all work" />
@@ -57,7 +57,7 @@ export function TasksView() {
           <nav className="seg" aria-label="Task filters">
             {FILTERS.map((f) => (
               <button key={f.id} type="button" className={filter === f.id ? 'is-on' : ''} aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
-                {f.label}{f.id !== 'done' && <small>{count(f.id) || ''}</small>}
+                {f.label}{f.id !== 'done' && <small className="num">{count(f.id) || ''}</small>}
               </button>
             ))}
           </nav>
@@ -84,7 +84,7 @@ export function TasksView() {
                     onChange={(e) => dispatch({ type: 'UPDATE_PROJECT', id: p.id, patch: { color: e.target.value } })}
                   />
                   <button type="button" className={`proj-btn ${projectId === p.id ? 'is-on' : ''}`} onClick={() => setProjectId(p.id)}>
-                    {p.name} <small className="muted">{open || ''}</small>
+                    <i className="dot" style={{ background: p.color }} />{p.name} <small className="muted num">{open || ''}</small>
                   </button>
                   <button type="button" className="icon-btn" title="Archive project" aria-label={`Archive ${p.name}`} onClick={() => dispatch({ type: 'UPDATE_PROJECT', id: p.id, patch: { archived: true } })}>⌫</button>
                 </li>

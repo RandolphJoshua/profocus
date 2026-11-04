@@ -10,14 +10,31 @@ import { TodayView } from './views/TodayView';
 import { WeekView } from './views/WeekView';
 
 const VIEWS = [
-  { id: 'today', label: 'Today', icon: '◉' },
-  { id: 'week', label: 'Week', icon: '▦' },
-  { id: 'tasks', label: 'Tasks', icon: '☰' },
-  { id: 'habits', label: 'Habits', icon: '✓' },
-  { id: 'review', label: 'Review', icon: '◔' },
-  { id: 'settings', label: 'Settings', icon: '⚙' },
+  { id: 'today', label: 'Today' },
+  { id: 'week', label: 'Week' },
+  { id: 'tasks', label: 'Tasks' },
+  { id: 'habits', label: 'Habits' },
+  { id: 'review', label: 'Review' },
+  { id: 'settings', label: 'Settings' },
 ] as const;
 type ViewId = (typeof VIEWS)[number]['id'];
+
+/** 16px outline icons, 1.5px stroke, drawn on a 16 grid. */
+const ICONS: Record<string, string> = {
+  today: 'M8 2.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm0 3v2.5l1.8 1.2',
+  week: 'M2.5 4.5h11v8.5h-11zM2.5 7.5h11M5.5 2.5v3M10.5 2.5v3',
+  tasks: 'M3 4.5h10M3 8h10M3 11.5h6',
+  habits: 'M3 8.5l3 3 7-7',
+  review: 'M3 13V8M8 13V3.5M13 13V6',
+  settings: 'M3 5h10M3 11h10M10 3v4M6 9v4',
+};
+function NavIcon({ id }: { id: string }) {
+  return (
+    <svg className="nav-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d={ICONS[id]} />
+    </svg>
+  );
+}
 
 const isViewId = (v: string): v is ViewId => VIEWS.some((x) => x.id === v);
 const viewFromHash = (): ViewId => {
@@ -30,6 +47,7 @@ export function App() {
   const timer = useTimer();
   const [view, setView] = useState<ViewId>(viewFromHash);
   const quickAddRef = useRef<HTMLInputElement>(null);
+  const inbox = state.tasks.filter((t) => !t.done && !t.date).length;
 
   // View lives in the URL hash so reloads and back/forward work.
   useEffect(() => {
@@ -78,7 +96,7 @@ export function App() {
       <a className="skip-link" href="#main">Skip to content</a>
       <aside className="sidebar">
         <div className="brand">
-          <img src="/icon.svg" alt="" width={28} height={28} />
+          <img src="/icon.svg" alt="" width={24} height={24} />
           <span>ProFocus</span>
         </div>
         <nav aria-label="Main">
@@ -86,8 +104,9 @@ export function App() {
             {VIEWS.map((v, i) => (
               <li key={v.id}>
                 <button type="button" className={`nav-btn ${view === v.id ? 'is-on' : ''}`} aria-current={view === v.id ? 'page' : undefined} onClick={() => go(v.id)}>
-                  <span className="nav-icon" aria-hidden>{v.icon}</span>
+                  <NavIcon id={v.id} />
                   <span className="nav-label">{v.label}</span>
+                  {v.id === 'tasks' && inbox > 0 && <span className="nav-count num">{inbox}</span>}
                   <kbd className="nav-kbd">{i + 1}</kbd>
                 </button>
               </li>

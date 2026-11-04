@@ -27,9 +27,8 @@ export function WeekView() {
     <div className="week">
       <header className="page-head row">
         <div>
-          <p className="eyebrow">Week of</p>
-          <h1 className="display">{formatDay(weekStart, { month: 'long', day: 'numeric' })} – {formatDay(end, { month: weekStart.slice(5, 7) === end.slice(5, 7) ? undefined : 'long', day: 'numeric' })}</h1>
-          <p className="muted">{formatDuration(weekFocus)} focused this week</p>
+          <h1>Week</h1>
+          <p className="sub num">{formatDay(weekStart, { month: 'long', day: 'numeric' })} – {formatDay(end, { month: weekStart.slice(5, 7) === end.slice(5, 7) ? undefined : 'long', day: 'numeric' })} · {formatDuration(weekFocus)} focused</p>
         </div>
         <span className="spacer" />
         <div className="row gap" role="group" aria-label="Week navigation">
@@ -76,9 +75,9 @@ export function WeekView() {
                 return (
                   <div key={d} className={`week-day-head ${d === today ? 'is-today' : ''}`}>
                     <span className="wd">{shortWeekday(d)}</span>
-                    <span className="dn">{Number(d.slice(8))}</span>
-                    {plan?.highlight && <span className={`hl ${plan.highlightDone ? 'is-done' : ''}`} title={plan.highlight}>★ {plan.highlight}</span>}
-                    {mins > 0 && <span className="fm">{formatDuration(mins)}</span>}
+                    <span className="dn num">{Number(d.slice(8))}</span>
+                    {plan?.highlight && <span className={`hl ${plan.highlightDone ? 'is-done' : ''}`} title={plan.highlight}>{plan.highlight}</span>}
+                    {mins > 0 && <span className="fm num">{formatDuration(mins)}</span>}
                   </div>
                 );
               })}

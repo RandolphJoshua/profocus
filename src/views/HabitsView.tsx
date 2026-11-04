@@ -16,8 +16,8 @@ export function HabitsView() {
   return (
     <div className="habits-page">
       <header className="page-head">
-        <p className="eyebrow">Small things, done often</p>
-        <h1 className="display">Habits</h1>
+        <h1>Habits</h1>
+        <p className="sub num">{habits.length} active · last 28 days shown</p>
       </header>
 
       <form
@@ -78,7 +78,7 @@ export function HabitsView() {
                     </span>
                   );
                 })}
-                <span role="cell" className="streak">{streak > 0 ? `${streak}🔥` : '—'}</span>
+                <span role="cell" className="streak num">{streak > 0 ? `${streak} d` : '—'}</span>
                 <span role="cell" className="heat" aria-label={`${history.filter((d) => state.habitLog[d]?.includes(h.id)).length} of the last ${HISTORY_DAYS} days`}>
                   {history.map((d) => <i key={d} className={state.habitLog[d]?.includes(h.id) ? 'on' : ''} />)}
                 </span>

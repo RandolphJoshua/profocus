@@ -9,6 +9,18 @@ export interface Project {
   name: string;
   color: string;
   archived?: boolean;
+  goalId?: ID;
+}
+
+export interface Goal {
+  id: ID;
+  title: string;
+  /** One line: why this matters. */
+  why?: string;
+  targetDate?: DateKey;
+  status: 'active' | 'done' | 'paused';
+  createdAt: string;
+  doneAt?: string;
 }
 
 export interface Task {
@@ -47,6 +59,9 @@ export interface FocusSession {
   minutes: number;
   taskId?: ID;
   projectId?: ID;
+  /** 1 rough, 2 ok, 3 flow. */
+  rating?: 1 | 2 | 3;
+  intention?: string;
 }
 
 export interface Habit {
@@ -65,9 +80,23 @@ export interface DayPlan {
   energy?: number;
   shutdownNote?: string;
   shutdownDone?: boolean;
+  /** ISO time the "Plan my day" ritual finished. */
+  plannedAt?: string;
+  /** Focus-mode sentence: "I will … by …". */
+  intention?: string;
+}
+
+export interface WeekPriority {
+  id: ID;
+  title: string;
+  goalId?: ID;
+  done: boolean;
 }
 
 export interface WeeklyReview {
+  priorities?: WeekPriority[];
+  /** ISO time the "Plan my week" ritual finished. */
+  plannedAt?: string;
   wins?: string;
   lessons?: string;
   nextFocus?: string;
@@ -92,6 +121,7 @@ export interface Settings {
 export interface AppState {
   version: 1;
   projects: Project[];
+  goals: Goal[];
   tasks: Task[];
   blocks: TimeBlock[];
   sessions: FocusSession[];

@@ -30,6 +30,7 @@ export function emptyState(): AppState {
       { id: 'p-personal', name: 'Personal', color: '#2f9e6e' },
       { id: 'p-learning', name: 'Learning', color: '#9b5de5' },
     ],
+    goals: [],
     tasks: [],
     blocks: [],
     sessions: [],
@@ -57,6 +58,7 @@ export function normalizeState(raw: unknown): AppState {
   return {
     version: 1,
     projects: arr(raw.projects, base.projects),
+    goals: arr(raw.goals, []),
     tasks: arr(raw.tasks, []),
     blocks: arr(raw.blocks, []),
     sessions: arr(raw.sessions, []),

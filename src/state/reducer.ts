@@ -1,7 +1,7 @@
 import type { ParsedTask } from '../lib/parse';
 import { nextColor, uid } from '../lib/storage';
 import type {
-  AppState, DateKey, DayPlan, FocusSession, Habit, ID, Project, Settings, Task, TimeBlock, WeeklyReview,
+  AppState, DateKey, Goal, DayPlan, FocusSession, Habit, ID, Project, Settings, Task, TimeBlock, WeekPriority, WeeklyReview,
 } from '../lib/types';
 
 export type Action =
@@ -12,6 +12,12 @@ export type Action =
   | { type: 'ROLL_OVER'; to: DateKey }
   | { type: 'ADD_PROJECT'; project: Project }
   | { type: 'UPDATE_PROJECT'; id: ID; patch: Partial<Project> }
+  | { type: 'ADD_GOAL'; goal: Goal }
+  | { type: 'UPDATE_GOAL'; id: ID; patch: Partial<Goal> }
+  | { type: 'DELETE_GOAL'; id: ID }
+  | { type: 'SET_WEEK_PRIORITIES'; week: DateKey; priorities: WeekPriority[] }
+  | { type: 'TOGGLE_WEEK_PRIORITY'; week: DateKey; id: ID }
+  | { type: 'RATE_SESSION'; id: ID; rating: 1 | 2 | 3 }
   | { type: 'ADD_BLOCK'; block: TimeBlock }
   | { type: 'UPDATE_BLOCK'; id: ID; patch: Partial<TimeBlock> }
   | { type: 'DELETE_BLOCK'; id: ID }
@@ -63,6 +69,40 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, projects: [...state.projects, action.project] };
     case 'UPDATE_PROJECT':
       return { ...state, projects: patchById(state.projects, action.id, action.patch) };
+    case 'ADD_GOAL':
+      return { ...state, goals: [...state.goals, action.goal] };
+    case 'UPDATE_GOAL':
+      return { ...state, goals: patchById(state.goals, action.id, action.patch) };
+    case 'DELETE_GOAL': {
+      const reviews: Record<DateKey, WeeklyReview> = {};
+      for (const [k, r] of Object.entries(state.reviews)) {
+        reviews[k] = r.priorities
+          ? { ...r, priorities: r.priorities.map((p) => (p.goalId === action.id ? { ...p, goalId: undefined } : p)) }
+          : r;
+      }
+      return {
+        ...state,
+        goals: state.goals.filter((g) => g.id !== action.id),
+        projects: state.projects.map((p) => (p.goalId === action.id ? { ...p, goalId: undefined } : p)),
+        reviews,
+      };
+    }
+    case 'SET_WEEK_PRIORITIES':
+      return {
+        ...state,
+        reviews: {
+          ...state.reviews,
+          [action.week]: { ...state.reviews[action.week], priorities: action.priorities.slice(0, 3) },
+        },
+      };
+    case 'TOGGLE_WEEK_PRIORITY': {
+      const review = state.reviews[action.week];
+      if (!review?.priorities) return state;
+      const priorities = review.priorities.map((p) => (p.id === action.id ? { ...p, done: !p.done } : p));
+      return { ...state, reviews: { ...state.reviews, [action.week]: { ...review, priorities } } };
+    }
+    case 'RATE_SESSION':
+      return { ...state, sessions: state.sessions.map((s) => (s.id === action.id ? { ...s, rating: action.rating } : s)) };
     case 'ADD_BLOCK':
       return { ...state, blocks: [...state.blocks, action.block] };
     case 'UPDATE_BLOCK':
@@ -99,6 +139,20 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'BATCH':
       return action.actions.reduce(reducer, state);
   }
+}
+
+/** Next free [start,end) slot of `minutes` on `date` at or after `from`, within day hours, snapped to 15 min. */
+export function nextFreeSlot(
+  blocks: TimeBlock[], date: DateKey, from: number, minutes: number, dayStart: number, dayEnd: number,
+): { start: number; end: number } | null {
+  const busy = blocks.filter((b) => b.date === date).sort((a, b) => a.start - b.start);
+  let start = Math.ceil(Math.max(from, dayStart) / 15) * 15;
+  for (const b of busy) {
+    if (b.end <= start) continue;
+    if (b.start >= start + minutes) break;
+    start = Math.ceil(b.end / 15) * 15;
+  }
+  return start + minutes <= dayEnd ? { start, end: start + minutes } : null;
 }
 
 export function findProjectByName(projects: Project[], name: string): Project | undefined {

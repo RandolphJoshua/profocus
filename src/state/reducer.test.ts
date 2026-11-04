@@ -1,6 +1,6 @@
 import { parseQuickAdd } from '../lib/parse';
 import { emptyState } from '../lib/storage';
-import { quickAddActions, reducer } from './reducer';
+import { nextFreeSlot, quickAddActions, reducer } from './reducer';
 
 const TODAY = '2026-11-04';
 let n = 0;
@@ -83,5 +83,48 @@ describe('reducer', () => {
     const snapshot = JSON.stringify(s0);
     reducer(s0, { type: 'UPDATE_TASK', id: 't1', patch: { title: 'New' } });
     expect(JSON.stringify(s0)).toBe(snapshot);
+  });
+});
+
+describe('goals and priorities', () => {
+  const goal = { id: 'g1', title: 'Ship', status: 'active' as const, createdAt: NOW };
+  it('adds, updates and deletes a goal, clearing references', () => {
+    let s = reducer(emptyState(), { type: 'ADD_GOAL', goal });
+    s = reducer(s, { type: 'UPDATE_GOAL', id: 'g1', patch: { status: 'done', doneAt: NOW } });
+    expect(s.goals[0]).toMatchObject({ id: 'g1', status: 'done', doneAt: NOW });
+    s = reducer(s, { type: 'UPDATE_PROJECT', id: 'p-work', patch: { goalId: 'g1' } });
+    s = reducer(s, { type: 'SET_WEEK_PRIORITIES', week: '2026-11-02', priorities: [{ id: 'a', title: 'A', goalId: 'g1', done: false }] });
+    s = reducer(s, { type: 'DELETE_GOAL', id: 'g1' });
+    expect(s.goals).toEqual([]);
+    expect(s.projects.find((p) => p.id === 'p-work')!.goalId).toBeUndefined();
+    expect(s.reviews['2026-11-02']!.priorities![0]!.goalId).toBeUndefined();
+  });
+  it('limits priorities to three and toggles one', () => {
+    const pr = ['a', 'b', 'c', 'd'].map((id) => ({ id, title: id, done: false }));
+    let s = reducer(emptyState(), { type: 'SET_WEEK_PRIORITIES', week: 'w', priorities: pr });
+    expect(s.reviews.w!.priorities).toHaveLength(3);
+    s = reducer(s, { type: 'TOGGLE_WEEK_PRIORITY', week: 'w', id: 'b' });
+    expect(s.reviews.w!.priorities!.map((p) => p.done)).toEqual([false, true, false]);
+    expect(reducer(s, { type: 'TOGGLE_WEEK_PRIORITY', week: 'none', id: 'b' })).toBe(s);
+  });
+  it('rates a session', () => {
+    const s0 = reducer(emptyState(), { type: 'LOG_SESSION', session: { id: 's', startedAt: NOW, date: TODAY, minutes: 25 } });
+    expect(reducer(s0, { type: 'RATE_SESSION', id: 's', rating: 3 }).sessions[0]!.rating).toBe(3);
+  });
+});
+
+describe('nextFreeSlot', () => {
+  const blk = (start: number, end: number, date = TODAY) => ({ id: `${start}`, date, start, end, title: '', kind: 'focus' as const });
+  it('snaps to 15 minutes and starts at dayStart', () => {
+    expect(nextFreeSlot([], TODAY, 0, 30, 420, 1320)).toEqual({ start: 420, end: 450 });
+    expect(nextFreeSlot([], TODAY, 500, 30, 420, 1320)).toEqual({ start: 510, end: 540 });
+  });
+  it('finds a gap between blocks', () => {
+    const blocks = [blk(540, 600), blk(660, 720), blk(0, 1440, '2026-11-05')];
+    expect(nextFreeSlot(blocks, TODAY, 540, 60, 420, 1320)).toEqual({ start: 600, end: 660 });
+    expect(nextFreeSlot(blocks, TODAY, 540, 90, 420, 1320)).toEqual({ start: 720, end: 810 });
+  });
+  it('returns null when nothing fits', () => {
+    expect(nextFreeSlot([blk(420, 1300)], TODAY, 420, 60, 420, 1320)).toBeNull();
   });
 });

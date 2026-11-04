@@ -11,3 +11,12 @@ describe('storage', () => {
     expect(s.projects.length).toBeGreaterThan(0);
   });
 });
+
+describe('goals', () => {
+  it('defaults goals to [] and keeps valid ones', () => {
+    expect(normalizeState({}).goals).toEqual([]);
+    expect(normalizeState({ goals: 'x' }).goals).toEqual([]);
+    const g = { id: 'g', title: 'T', status: 'active', createdAt: '' };
+    expect(normalizeState({ goals: [g] }).goals).toEqual([g]);
+  });
+});

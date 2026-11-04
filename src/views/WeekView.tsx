@@ -1,0 +1,99 @@
+import { useState } from 'react';
+import { BlockEditor, newDraft, type BlockDraft } from '../components/BlockEditor';
+import { DayColumn, TimeGutter } from '../components/DayColumn';
+import { addDays, formatDay, formatDuration, shortWeekday, startOfWeek, weekDays } from '../lib/date';
+import { focusMinutesOn } from '../lib/stats';
+import { useStore, useToday } from '../state/store';
+import { byPriority } from './TodayView';
+
+const HOUR = 48;
+
+export function WeekView() {
+  const { state } = useStore();
+  const today = useToday();
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(today, state.settings.weekStartsOn));
+  const [draft, setDraft] = useState<BlockDraft | null>(null);
+  const days = weekDays(weekStart);
+  const end = days[6] ?? weekStart;
+
+  const scheduled = new Set(state.blocks.map((b) => b.taskId).filter(Boolean));
+  const toSchedule = state.tasks
+    .filter((t) => !t.done && !scheduled.has(t.id) && (!t.date || (t.date >= weekStart && t.date <= end) || t.date < today))
+    .sort(byPriority);
+
+  const weekFocus = days.reduce((n, d) => n + focusMinutesOn(state.sessions, d), 0);
+
+  return (
+    <div className="week">
+      <header className="page-head row">
+        <div>
+          <p className="eyebrow">Week of</p>
+          <h1 className="display">{formatDay(weekStart, { month: 'long', day: 'numeric' })} – {formatDay(end, { month: weekStart.slice(5, 7) === end.slice(5, 7) ? undefined : 'long', day: 'numeric' })}</h1>
+          <p className="muted">{formatDuration(weekFocus)} focused this week</p>
+        </div>
+        <span className="spacer" />
+        <div className="row gap" role="group" aria-label="Week navigation">
+          <button type="button" className="btn" onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label="Previous week">←</button>
+          <button type="button" className="btn" onClick={() => setWeekStart(startOfWeek(today, state.settings.weekStartsOn))}>This week</button>
+          <button type="button" className="btn" onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Next week">→</button>
+        </div>
+      </header>
+
+      <div className="week-layout">
+        <aside className="card week-tray">
+          <h2 className="card-title">To schedule</h2>
+          <p className="hint">Drag onto a day to time-block it.</p>
+          <ul className="tray-list">
+            {toSchedule.map((t) => {
+              const p = state.projects.find((x) => x.id === t.projectId);
+              return (
+                <li
+                  key={t.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/profocus-task', t.id);
+                    e.dataTransfer.effectAllowed = 'copy';
+                  }}
+                  className="tray-item"
+                >
+                  <i style={{ background: p?.color ?? 'var(--line-strong)' }} />
+                  <span>{t.title}</span>
+                  {t.estimateMin && <small className="muted">{formatDuration(t.estimateMin)}</small>}
+                </li>
+              );
+            })}
+            {toSchedule.length === 0 && <li className="empty">All caught up.</li>}
+          </ul>
+        </aside>
+
+        <div className="card week-cal">
+          <div className="week-scroll">
+            <div className="week-head">
+              <span />
+              {days.map((d) => {
+                const plan = state.days[d];
+                const mins = focusMinutesOn(state.sessions, d);
+                return (
+                  <div key={d} className={`week-day-head ${d === today ? 'is-today' : ''}`}>
+                    <span className="wd">{shortWeekday(d)}</span>
+                    <span className="dn">{Number(d.slice(8))}</span>
+                    {plan?.highlight && <span className={`hl ${plan.highlightDone ? 'is-done' : ''}`} title={plan.highlight}>★ {plan.highlight}</span>}
+                    {mins > 0 && <span className="fm">{formatDuration(mins)}</span>}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="week-body">
+              <TimeGutter hourHeight={HOUR} />
+              {days.map((d) => (
+                <DayColumn key={d} date={d} hourHeight={HOUR} isToday={d === today} onCreate={(dd, s, e) => setDraft(newDraft(dd, s, e))} onSelect={(b) => setDraft(b)} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {draft && <BlockEditor key={draft.id ?? 'new'} draft={draft} onClose={() => setDraft(null)} />}
+    </div>
+  );
+}

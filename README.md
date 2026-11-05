@@ -5,8 +5,10 @@ A personal planner for doing fewer things, better. Built for one person (me), ru
 **Today**: a two-minute *Plan my day* ritual (triage → highlight → block time), the day's tasks, a time-blocked timeline, focus sessions, habits, this week's three priorities, and a shutdown ritual. The greeting line carries the day's one fact, your planned-days streak and today's score.
 **Week**: a 7-day calendar with a *Plan my week* ritual (review last week → pick three priorities linked to goals → protect time for each). Drag tasks onto any day, move and resize blocks.
 **Tasks**: inbox / today / upcoming / overdue, with projects that roll up to goals.
-**Goals**: long-term goals with a why and a target date; progress from focus time, tasks done and weeks prioritised.
-**Focus mode**: one task, an intention line, the timer, nothing else; rate each session rough / ok / flow.
+**Goals**: long-term goals with a why and a target date; progress from focus time, tasks done and weeks prioritised, plus a trajectory ("Day 8 of 127 · On track / Adjust / Off track").
+**Focus mode**: one task, an intention line, the timer, optional brown noise, nothing else; rate each session rough / ok / flow (shown as focus quality on Review).
+**Auto-plan**: "Schedule everything" in Plan my day chains your open tasks into the day's free slots; "Add all three" in Plan my week spreads the priorities over the week.
+**Google Calendar**: sign in with Google and connect the calendar from Settings → Account; events for the current week ±1 appear as read-only blocks so planning works around them.
 **Habits**: weekly check-offs, streaks and a 4-week heatmap.
 **Review**: daily scores (40 highlight · 30 focus vs plan · 15 habits · 15 tasks), focus by day and project, highlights hit, and reflection prompts.
 

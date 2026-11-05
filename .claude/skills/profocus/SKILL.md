@@ -35,6 +35,7 @@ Goals sit above projects (`project.goalId`); everything rolls up: session → ta
 | `src/state/timer.tsx` | Focus/break timer (wall-clock based, survives reloads), logs `FocusSession`s. |
 | `src/components/DayColumn.tsx` | Pointer-driven timeline: drag to create, move (across days), resize, drop tasks. |
 | `src/lib/supabase.ts`, `src/lib/sync.ts`, `src/state/auth.tsx`, `src/state/sync.tsx` | Optional account + cloud sync: client is `null` without `VITE_SUPABASE_*` env; `chooseSource` decides local vs cloud on sign-in; whole-state upsert to `planner_state`, debounced; pull on focus. Spec: `.taste-skill/plan-sync.md`. |
+| `src/lib/calendar.ts`, `src/state/calendar.tsx` | Google Calendar read-only import: provider token from the Google sign-in (memory only), events → `TimeBlock{source:'google'}` via `SET_EXTERNAL_BLOCKS`. Waits for the first cloud sync before importing. Spec: `.taste-skill/plan-features.md` Part D1. |
 | `src/components/PlanDay.tsx`, `PlanWeek.tsx` | The two guided rituals (3-step modals); `WeekPriorities.tsx` is the shared "this week's three" panel. |
 | `src/views/*` | One file per screen: Today, Week, Tasks, Goals, Habits, Review, Settings, plus `FocusMode` (full-screen overlay at `#focus`). |
 | `src/styles.css` | Design tokens on `:root` (light + dark), "Editorial greeting" app style: white sheet in a warm-stone frame, Instrument Sans body, Instrument Serif for the greeting only, one hue (teal) on data. |

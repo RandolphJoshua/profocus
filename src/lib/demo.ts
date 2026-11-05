@@ -52,6 +52,7 @@ export function demoState(today: DateKey): AppState {
   }
   days[today] = { highlight: 'Finish chapter 3 outline', highlightTaskId: 't1', highlightDone: false, plannedAt: at(today, 8) };
 
+  const seasonStart = addDays(today, -4 * 7);
   const week = startOfWeek(today, base.settings.weekStartsOn);
 
   return {
@@ -64,6 +65,14 @@ export function demoState(today: DateKey): AppState {
     goals: [
       { id: 'g-book', title: 'Finish the book draft', why: 'Send the manuscript to my editor', targetDate: addDays(today, 120), status: 'active', createdAt: created },
       { id: 'g-fit', title: 'Get fitter', why: 'Energy for the long days', targetDate: addDays(today, 33), status: 'active', createdAt: created },
+    ],
+    seasons: [
+      { id: 'se-autumn', name: 'Autumn push', theme: 'Finish the draft and get moving', start: seasonStart, end: addDays(seasonStart, 12 * 7 - 1), goalIds: ['g-book', 'g-fit'], createdAt: at(seasonStart, 8) },
+      {
+        id: 'se-spring', name: 'Spring reset', theme: 'Clear the backlog and rebuild routines', start: addDays(seasonStart, -(16 * 7)), end: addDays(seasonStart, -(4 * 7) - 1),
+        goalIds: ['g-book'], createdAt: at(addDays(seasonStart, -(16 * 7)), 8), closedAt: at(addDays(seasonStart, -(4 * 7)), 9),
+        reviewNote: 'Small daily blocks beat big plans. Protect the morning.',
+      },
     ],
     reviews: {
       [week]: {

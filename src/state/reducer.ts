@@ -1,7 +1,7 @@
 import type { ParsedTask } from '../lib/parse';
 import { nextColor, uid } from '../lib/storage';
 import type {
-  AppState, DateKey, Goal, DayPlan, FocusSession, Habit, ID, Project, Settings, Task, TimeBlock, WeekPriority, WeeklyReview,
+  AppState, DateKey, Goal, DayPlan, FocusSession, Habit, ID, Project, Season, Settings, Task, TimeBlock, WeekPriority, WeeklyReview,
 } from '../lib/types';
 
 export type Action =
@@ -15,6 +15,9 @@ export type Action =
   | { type: 'ADD_GOAL'; goal: Goal }
   | { type: 'UPDATE_GOAL'; id: ID; patch: Partial<Goal> }
   | { type: 'DELETE_GOAL'; id: ID }
+  | { type: 'ADD_SEASON'; season: Season }
+  | { type: 'UPDATE_SEASON'; id: ID; patch: Partial<Season> }
+  | { type: 'DELETE_SEASON'; id: ID }
   | { type: 'SET_WEEK_PRIORITIES'; week: DateKey; priorities: WeekPriority[] }
   | { type: 'TOGGLE_WEEK_PRIORITY'; week: DateKey; id: ID }
   | { type: 'RATE_SESSION'; id: ID; rating: 1 | 2 | 3 }
@@ -84,10 +87,17 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         goals: state.goals.filter((g) => g.id !== action.id),
+        seasons: state.seasons.map((s) => (s.goalIds.includes(action.id) ? { ...s, goalIds: s.goalIds.filter((i) => i !== action.id) } : s)),
         projects: state.projects.map((p) => (p.goalId === action.id ? { ...p, goalId: undefined } : p)),
         reviews,
       };
     }
+    case 'ADD_SEASON':
+      return { ...state, seasons: [...state.seasons, action.season] };
+    case 'UPDATE_SEASON':
+      return { ...state, seasons: patchById(state.seasons, action.id, action.patch) };
+    case 'DELETE_SEASON':
+      return { ...state, seasons: state.seasons.filter((s) => s.id !== action.id) };
     case 'SET_WEEK_PRIORITIES':
       return {
         ...state,

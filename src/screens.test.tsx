@@ -143,6 +143,41 @@ describe('Goals', () => {
   });
 });
 
+describe('Seasons', () => {
+  it('starts a season from Goals and shows it in the panel with its goal under This season', () => {
+    const initial: AppState = {
+      ...emptyState(),
+      goals: [
+        { id: 'g1', title: 'Ship the book', status: 'active', createdAt: '2026-11-01T08:00:00.000Z' },
+        { id: 'g2', title: 'Get fitter', status: 'active', createdAt: '2026-11-01T08:00:00.000Z' },
+      ],
+    };
+    mount(initial, 'goals');
+    expect(screen.getByText(/No season running/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Start a season' }));
+    const dialog = screen.getByRole('dialog', { name: 'Start a season' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start season' }));
+    expect(within(dialog).getByRole('alert').textContent).toMatch(/name/);
+    fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'Autumn push' } });
+    fireEvent.change(within(dialog).getByLabelText('Theme'), { target: { value: 'Finish the draft' } });
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Ship the book' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Start season' }));
+
+    const panel = screen.getByRole('region', { name: 'Season' });
+    expect(within(panel).getByText('Autumn push')).toBeTruthy();
+    expect(within(panel).getByText('Finish the draft')).toBeTruthy();
+    expect(within(panel).getByText(/Week 1 of 12 · 83 days left · 0 of 1 goals done/)).toBeTruthy();
+    const mine = screen.getByRole('region', { name: 'This season' });
+    expect(within(mine).getByRole('heading', { name: 'Ship the book' })).toBeTruthy();
+    const later = screen.getByRole('region', { name: 'Later' });
+    expect(within(later).getByRole('heading', { name: 'Get fitter' })).toBeTruthy();
+
+    fireEvent.click(within(later).getByRole('button', { name: 'Add to season: Get fitter' }));
+    expect(within(screen.getByRole('region', { name: 'This season' })).getByRole('heading', { name: 'Get fitter' })).toBeTruthy();
+    expect(within(panel).getByText(/0 of 2 goals done/)).toBeTruthy();
+  });
+});
+
 describe('Focus mode sound', () => {
   it('toggles brown noise and shows nothing when sound is off in settings', () => {
     const start = vi.fn();

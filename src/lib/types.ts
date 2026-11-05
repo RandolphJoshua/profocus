@@ -23,6 +23,23 @@ export interface Goal {
   doneAt?: string;
 }
 
+/** A time box (12 weeks by default) with a theme and the few goals that get space in it. */
+export interface Season {
+  id: ID;
+  name: string;
+  /** One line: what this season is about. */
+  theme?: string;
+  start: DateKey;
+  /** Inclusive. */
+  end: DateKey;
+  goalIds: ID[];
+  createdAt: string;
+  /** Set by "Close season". */
+  closedAt?: string;
+  /** Written when closing. */
+  reviewNote?: string;
+}
+
 export interface Task {
   id: ID;
   title: string;
@@ -128,6 +145,7 @@ export interface AppState {
   version: 1;
   projects: Project[];
   goals: Goal[];
+  seasons: Season[];
   tasks: Task[];
   blocks: TimeBlock[];
   sessions: FocusSession[];

@@ -1,6 +1,6 @@
 import { addDays, fromKey, toKey, weekDays } from './date';
 import { nextFreeSlot } from '../state/reducer';
-import type { AppState, DateKey, FocusSession, ID, Task, TimeBlock } from './types';
+import type { AppState, DateKey, FocusSession, ID, Season, Task, TimeBlock } from './types';
 
 export function focusMinutesOn(sessions: FocusSession[], date: DateKey): number {
   return sessions.filter((s) => s.date === date).reduce((sum, s) => sum + s.minutes, 0);
@@ -205,7 +205,7 @@ const ON_TRACK_SLACK = 0.1;
 const ADJUST_SLACK = 0.25;
 const EPSILON = 1e-9;
 
-const daysBetween = (from: DateKey, to: DateKey) =>
+export const daysBetween = (from: DateKey, to: DateKey) =>
   Math.round((fromKey(to).getTime() - fromKey(from).getTime()) / 86_400_000);
 
 /**
@@ -262,4 +262,42 @@ export function focusQuality(sessions: FocusSession[], days: DateKey[]): { rated
   const ratings = sessions.filter((s) => inRange.has(s.date) && s.rating).map((s) => RATING_VALUE[s.rating!]);
   if (!ratings.length) return { rated: 0, quality: null };
   return { rated: ratings.length, quality: Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 100) };
+}
+
+/** The open season that contains `today` (the one with the latest start if several). */
+export function currentSeason(seasons: Season[], today: DateKey): Season | undefined {
+  return seasons
+    .filter((s) => !s.closedAt && s.start <= today && today <= s.end)
+    .sort((a, b) => b.start.localeCompare(a.start))[0];
+}
+
+export interface SeasonProgress {
+  weekOf: number;
+  weeksTotal: number;
+  daysLeft: number;
+  goalsDone: number;
+  goalsTotal: number;
+  focusMin: number;
+  highlightsHit: number;
+  daysElapsed: number;
+}
+
+export function seasonProgress(state: AppState, seasonId: ID, today: DateKey): SeasonProgress {
+  const season = state.seasons.find((s) => s.id === seasonId);
+  if (!season) return { weekOf: 1, weeksTotal: 1, daysLeft: 0, goalsDone: 0, goalsTotal: 0, focusMin: 0, highlightsHit: 0, daysElapsed: 0 };
+  const weeksTotal = Math.max(1, Math.ceil((daysBetween(season.start, season.end) + 1) / 7));
+  const upTo = today < season.end ? today : season.end;
+  const daysElapsed = Math.max(0, daysBetween(season.start, upTo) + 1);
+  const inRange = (d: DateKey) => d >= season.start && d <= upTo;
+  const goals = state.goals.filter((g) => season.goalIds.includes(g.id));
+  return {
+    weekOf: Math.min(weeksTotal, Math.max(1, Math.ceil(daysElapsed / 7))),
+    weeksTotal,
+    daysLeft: Math.max(0, daysBetween(today, season.end)),
+    goalsDone: goals.filter((g) => g.status === 'done').length,
+    goalsTotal: goals.length,
+    focusMin: state.sessions.filter((s) => inRange(s.date)).reduce((n, s) => n + s.minutes, 0),
+    highlightsHit: Object.entries(state.days).filter(([d, p]) => inRange(d) && p.highlightDone).length,
+    daysElapsed,
+  };
 }

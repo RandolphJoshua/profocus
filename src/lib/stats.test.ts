@@ -1,6 +1,6 @@
 import { emptyState } from './storage';
-import { dayScore, focusQuality, goalProgress, goalTrajectory, habitStreak, planDay, plannedStreak, weekScores, weekStats } from './stats';
-import type { AppState } from './types';
+import { currentSeason, seasonProgress, dayScore, focusQuality, goalProgress, goalTrajectory, habitStreak, planDay, plannedStreak, weekScores, weekStats } from './stats';
+import type { AppState, Season } from './types';
 
 describe('habitStreak', () => {
   const log = { '2026-11-02': ['h'], '2026-11-03': ['h'], '2026-11-04': ['h'], '2026-10-31': ['h'] };
@@ -198,5 +198,69 @@ describe('focusQuality', () => {
   });
   it('is null when nothing is rated', () => {
     expect(focusQuality([s('2026-11-02')], ['2026-11-02'])).toEqual({ rated: 0, quality: null });
+  });
+});
+
+const season = (over: Partial<Season> = {}): Season => ({
+  id: 's1', name: 'Autumn', start: '2026-10-07', end: '2026-12-29', goalIds: ['g1', 'g2', 'g3'], createdAt: '2026-10-01T00:00:00Z', ...over,
+});
+
+describe('currentSeason', () => {
+  it('is undefined with no seasons or none covering today', () => {
+    expect(currentSeason([], '2026-11-04')).toBeUndefined();
+    expect(currentSeason([season()], '2026-10-06')).toBeUndefined();
+    expect(currentSeason([season()], '2026-12-30')).toBeUndefined();
+  });
+  it('finds the one containing today, ends inclusive', () => {
+    expect(currentSeason([season()], '2026-11-04')?.id).toBe('s1');
+    expect(currentSeason([season()], '2026-12-29')?.id).toBe('s1');
+  });
+  it('prefers the latest start when seasons overlap', () => {
+    const a = season({ id: 'a', start: '2026-10-01' });
+    const b = season({ id: 'b', start: '2026-11-01' });
+    expect(currentSeason([b, a], '2026-11-04')?.id).toBe('b');
+  });
+  it('ignores closed seasons', () => {
+    expect(currentSeason([season({ closedAt: '2026-11-01T00:00:00Z' })], '2026-11-04')).toBeUndefined();
+  });
+});
+
+describe('seasonProgress', () => {
+  const goal = (id: string, status: 'active' | 'done') => ({ id, title: id, status, createdAt: '' });
+  const state: AppState = {
+    ...emptyState(),
+    seasons: [season()],
+    goals: [goal('g1', 'done'), goal('g2', 'active'), goal('g3', 'active')],
+    sessions: [
+      { id: 'a', startedAt: '', date: '2026-10-06', minutes: 99 }, // before the season
+      { id: 'b', startedAt: '', date: '2026-10-07', minutes: 30 },
+      { id: 'c', startedAt: '', date: '2026-11-04', minutes: 45 },
+      { id: 'd', startedAt: '', date: '2026-11-05', minutes: 77 }, // after today
+    ],
+    days: {
+      '2026-10-07': { highlight: 'x', highlightDone: true },
+      '2026-11-04': { highlight: 'y', highlightDone: true },
+      '2026-11-03': { highlight: 'z' },
+      '2026-10-01': { highlight: 'old', highlightDone: true },
+    },
+  };
+
+  it('computes mid-season numbers', () => {
+    // Oct 7 .. Dec 29 = 84 days = 12 weeks. Today is day 29 (Nov 4).
+    expect(seasonProgress(state, 's1', '2026-11-04')).toEqual({
+      weekOf: 5, weeksTotal: 12, daysLeft: 55, goalsDone: 1, goalsTotal: 3, focusMin: 75, highlightsHit: 2, daysElapsed: 29,
+    });
+  });
+  it('before the start: week 1, nothing elapsed', () => {
+    const p = seasonProgress(state, 's1', '2026-10-01');
+    expect(p).toMatchObject({ weekOf: 1, daysElapsed: 0, focusMin: 0, highlightsHit: 0, daysLeft: 89 });
+  });
+  it('after the end: last week, no days left, range capped at the end', () => {
+    const p = seasonProgress({ ...state, sessions: [...state.sessions, { id: 'e', startedAt: '', date: '2027-01-02', minutes: 500 }] }, 's1', '2027-01-10');
+    expect(p).toMatchObject({ weekOf: 12, weeksTotal: 12, daysLeft: 0, daysElapsed: 84, focusMin: 30 + 45 + 77 });
+  });
+  it('counts only goals still in the state', () => {
+    const p = seasonProgress({ ...state, goals: [goal('g1', 'done')] }, 's1', '2026-11-04');
+    expect(p).toMatchObject({ goalsDone: 1, goalsTotal: 1 });
   });
 });

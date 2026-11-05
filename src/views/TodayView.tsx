@@ -7,7 +7,7 @@ import { QuickAdd } from '../components/QuickAdd';
 import { TaskItem } from '../components/TaskItem';
 import { WeekPriorities } from '../components/WeekPriorities';
 import { addDays, formatDay, formatDuration, startOfWeek } from '../lib/date';
-import { dayScore, focusMinutesOn, habitStreak, plannedStreak } from '../lib/stats';
+import { currentSeason, dayScore, focusMinutesOn, habitStreak, plannedStreak, seasonProgress } from '../lib/stats';
 import type { DayPlan, Task } from '../lib/types';
 import { useStore, useToday } from '../state/store';
 
@@ -54,7 +54,10 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
     : plan.highlight && highlightDone
       ? `${dateLabel} · highlight done · ${formatDuration(focusMin)} focused`
       : `${dateLabel} · ${plan.highlight ? 'highlight still open' : 'no highlight yet'} · ${formatDuration(blockedMin)} blocked`;
-  const fact = `${baseFact}${streak > 0 ? ` · planned ${streak} ${streak === 1 ? 'day' : 'days'} in a row` : ''}${hasData ? ` · score ${score.score}` : ''}`;
+  const season = currentSeason(state.seasons, today);
+  const sp = season ? seasonProgress(state, season.id, today) : undefined;
+  const seasonNote = sp ? ` · season week ${sp.weekOf} of ${sp.weeksTotal}` : '';
+  const fact = `${baseFact}${streak > 0 ? ` · planned ${streak} ${streak === 1 ? 'day' : 'days'} in a row` : ''}${hasData ? ` · score ${score.score}` : ''}${seasonNote}`;
 
   const setDay = (patch: Partial<DayPlan>, date = today) =>
     dispatch({ type: 'SET_DAY', date, patch });

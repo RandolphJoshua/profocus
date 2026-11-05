@@ -21,6 +21,15 @@ describe('goals', () => {
   });
 });
 
+describe('seasons', () => {
+  it('defaults seasons to [] and keeps valid ones', () => {
+    expect(normalizeState({}).seasons).toEqual([]);
+    expect(normalizeState({ seasons: 'x' }).seasons).toEqual([]);
+    const s = { id: 's', name: 'N', start: '2026-10-01', end: '2026-12-23', goalIds: [], createdAt: '' };
+    expect(normalizeState({ seasons: [s] }).seasons).toEqual([s]);
+  });
+});
+
 describe('savedAt', () => {
   it('records an ISO stamp on save and reads it back', () => {
     const data = new Map<string, string>();

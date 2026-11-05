@@ -8,6 +8,28 @@ let n = 0;
 const makeId = (p: string) => `${p}${++n}`;
 const NOW = '2026-11-04T09:00:00.000Z';
 
+describe('seasons', () => {
+  const season = { id: 's1', name: 'Autumn', start: '2026-10-01', end: '2026-12-23', goalIds: ['g1', 'g2'], createdAt: NOW };
+  const goal = (id: string) => ({ id, title: id, status: 'active' as const, createdAt: NOW });
+
+  it('adds, updates and deletes a season, leaving goals alone', () => {
+    const s0 = { ...emptyState(), goals: [goal('g1'), goal('g2')] };
+    const s1 = reducer(s0, { type: 'ADD_SEASON', season });
+    expect(s1.seasons).toEqual([season]);
+    const s2 = reducer(s1, { type: 'UPDATE_SEASON', id: 's1', patch: { name: 'Winter', id: 'x' } as Partial<typeof season> });
+    expect(s2.seasons[0]).toMatchObject({ id: 's1', name: 'Winter', goalIds: ['g1', 'g2'] });
+    const s3 = reducer(s2, { type: 'DELETE_SEASON', id: 's1' });
+    expect(s3.seasons).toEqual([]);
+    expect(s3.goals).toHaveLength(2);
+  });
+
+  it('DELETE_GOAL removes the goal from every season', () => {
+    const s0 = { ...emptyState(), goals: [goal('g1'), goal('g2')], seasons: [season, { ...season, id: 's2', goalIds: ['g1'] }] };
+    const s1 = reducer(s0, { type: 'DELETE_GOAL', id: 'g1' });
+    expect(s1.seasons.map((s) => s.goalIds)).toEqual([['g2'], []]);
+  });
+});
+
 describe('quickAddActions', () => {
   beforeEach(() => { n = 0; });
 

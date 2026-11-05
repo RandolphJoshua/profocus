@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal } from './Modal';
 import { addDays, formatDay, formatDuration, shortWeekday, weekDays } from '../lib/date';
-import { weekStats } from '../lib/stats';
+import { currentSeason, weekStats } from '../lib/stats';
 import { uid } from '../lib/storage';
 import type { DateKey, WeekPriority } from '../lib/types';
 import { useStore, useToday } from '../state/store';
@@ -28,6 +28,9 @@ export function PlanWeek({ week, onClose }: { week: DateKey; onClose: () => void
   const defaultDay = days.find((d) => d >= today) ?? week;
   const filled = slots.filter((s) => s.title.trim());
   const activeGoals = state.goals.filter((g) => g.status === 'active');
+  const seasonIds = currentSeason(state.seasons, today)?.goalIds ?? [];
+  const seasonGoals = seasonIds.flatMap((id) => activeGoals.find((g) => g.id === id) ?? []);
+  const otherGoals = activeGoals.filter((g) => !seasonIds.includes(g.id));
 
   const patchSlot = (i: number, patch: Partial<WeekPriority>) =>
     setSlots((all) => all.map((s, j) => (j === i ? { ...s, ...patch } : s)));
@@ -109,7 +112,18 @@ export function PlanWeek({ week, onClose }: { week: DateKey; onClose: () => void
               <label>Goal
                 <select aria-label={`Goal for priority ${i + 1}`} value={s.goalId ?? ''} onChange={(e) => patchSlot(i, { goalId: e.target.value || undefined })}>
                   <option value="">No goal</option>
-                  {activeGoals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+                  {seasonGoals.length > 0 ? (
+                    <>
+                      <optgroup label="This season">
+                        {seasonGoals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+                      </optgroup>
+                      {otherGoals.length > 0 && (
+                        <optgroup label="Other goals">
+                          {otherGoals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+                        </optgroup>
+                      )}
+                    </>
+                  ) : activeGoals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
                 </select>
               </label>
             </div>

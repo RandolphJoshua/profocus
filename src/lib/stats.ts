@@ -1,4 +1,4 @@
-import { addDays, fromKey, toKey, weekDays } from './date';
+import { addDays, fromKey, startOfWeek, toKey, weekDays } from './date';
 import { nextFreeSlot } from '../state/reducer';
 import type { AppState, DateKey, FocusSession, ID, Season, Task, TimeBlock } from './types';
 
@@ -300,4 +300,27 @@ export function seasonProgress(state: AppState, seasonId: ID, today: DateKey): S
     highlightsHit: Object.entries(state.days).filter(([d, p]) => inRange(d) && p.highlightDone).length,
     daysElapsed,
   };
+}
+
+export interface SeasonWeeks {
+  /** Weeks (from the season's first week up to `uptoWeek`) that have at least one priority. */
+  planned: number;
+  /** Of those, weeks with at least one priority linked to a season goal. */
+  onSeason: number;
+}
+
+/** How many planned weeks of the season put one of its goals in "this week's three". */
+export function seasonWeekAlignment(state: AppState, seasonId: ID, uptoWeek: DateKey): SeasonWeeks {
+  const season = state.seasons.find((s) => s.id === seasonId);
+  if (!season) return { planned: 0, onSeason: 0 };
+  const firstWeek = startOfWeek(season.start, state.settings.weekStartsOn);
+  let planned = 0;
+  let onSeason = 0;
+  for (const [week, review] of Object.entries(state.reviews)) {
+    const priorities = review.priorities ?? [];
+    if (week < firstWeek || week > uptoWeek || priorities.length === 0) continue;
+    planned += 1;
+    if (priorities.some((p) => p.goalId && season.goalIds.includes(p.goalId))) onSeason += 1;
+  }
+  return { planned, onSeason };
 }

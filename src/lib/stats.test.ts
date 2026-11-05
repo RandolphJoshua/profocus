@@ -1,5 +1,5 @@
 import { emptyState } from './storage';
-import { currentSeason, seasonProgress, dayScore, focusQuality, goalProgress, goalTrajectory, habitStreak, planDay, plannedStreak, weekScores, weekStats } from './stats';
+import { currentSeason, seasonProgress, seasonWeekAlignment, dayScore, focusQuality, goalProgress, goalTrajectory, habitStreak, planDay, plannedStreak, weekScores, weekStats } from './stats';
 import type { AppState, Season } from './types';
 
 describe('habitStreak', () => {
@@ -262,5 +262,50 @@ describe('seasonProgress', () => {
   it('counts only goals still in the state', () => {
     const p = seasonProgress({ ...state, goals: [goal('g1', 'done')] }, 's1', '2026-11-04');
     expect(p).toMatchObject({ goalsDone: 1, goalsTotal: 1 });
+  });
+});
+
+describe('seasonWeekAlignment', () => {
+  const season: Season = { id: 's', name: 'Autumn', start: '2026-10-05', end: '2026-12-27', goalIds: ['g1'], createdAt: '2026-10-05T00:00:00Z' };
+  const base = (): AppState => ({ ...emptyState(), seasons: [season] });
+  const pri = (goalId?: string) => [{ id: 'p', title: 'x', goalId, done: false }];
+
+  it('is zero with no planned weeks', () => {
+    expect(seasonWeekAlignment(base(), 's', '2026-11-02')).toEqual({ planned: 0, onSeason: 0 });
+  });
+
+  it('counts planned weeks and those that carry a season goal', () => {
+    const s: AppState = {
+      ...base(),
+      reviews: {
+        '2026-10-05': { priorities: pri('g1') },      // on season
+        '2026-10-12': { priorities: pri('g2') },      // other goal
+        '2026-10-19': { priorities: pri(undefined) }, // no goal
+        '2026-10-26': { wins: 'reflection only' },   // not planned
+      },
+    };
+    expect(seasonWeekAlignment(s, 's', '2026-11-02')).toEqual({ planned: 3, onSeason: 1 });
+  });
+
+  it('ignores weeks before the season and after the week in view', () => {
+    const s: AppState = {
+      ...base(),
+      reviews: {
+        '2026-09-28': { priorities: pri('g1') }, // before the season's first week
+        '2026-10-05': { priorities: pri('g1') },
+        '2026-11-09': { priorities: pri('g1') }, // after the week in view
+      },
+    };
+    expect(seasonWeekAlignment(s, 's', '2026-11-02')).toEqual({ planned: 1, onSeason: 1 });
+  });
+
+  it('starts from the week containing the season start', () => {
+    const s: AppState = { ...base(), reviews: { '2026-10-05': { priorities: pri('g1') } } };
+    const mid = { ...s, seasons: [{ ...season, start: '2026-10-07' }] }; // a Wednesday; its week starts 10-05
+    expect(seasonWeekAlignment(mid, 's', '2026-11-02')).toEqual({ planned: 1, onSeason: 1 });
+  });
+
+  it('is zero for an unknown season', () => {
+    expect(seasonWeekAlignment(base(), 'nope', '2026-11-02')).toEqual({ planned: 0, onSeason: 0 });
   });
 });

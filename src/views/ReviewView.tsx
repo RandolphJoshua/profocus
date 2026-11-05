@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { addDays, formatDay, formatDuration, shortWeekday, startOfWeek } from '../lib/date';
-import { currentSeason, focusQuality, goalTrajectory, seasonProgress, weekScores, weekStats } from '../lib/stats';
+import { currentSeason, focusQuality, goalTrajectory, seasonProgress, seasonWeekAlignment, weekScores, weekStats } from '../lib/stats';
 import { progressLine } from '../components/SeasonPanel';
 import { useStore, useToday } from '../state/store';
 
@@ -20,11 +20,7 @@ export function ReviewView() {
   const season = currentSeason(state.seasons, today);
   const seasonP = season ? seasonProgress(state, season.id, today) : undefined;
   const seasonGoals = season ? season.goalIds.map((id) => state.goals.find((g) => g.id === id)).filter((g): g is NonNullable<typeof g> => !!g) : [];
-  // Weeks of this season (up to this week) whose priorities include a season goal.
-  const seasonWeeks = season
-    ? Object.entries(state.reviews).filter(([w, r]) => w >= startOfWeek(season.start, state.settings.weekStartsOn) && w <= weekStart && (r.priorities?.length ?? 0) > 0)
-    : [];
-  const weeksOnSeason = seasonWeeks.filter(([, r]) => r.priorities?.some((p) => p.goalId && season?.goalIds.includes(p.goalId))).length;
+  const seasonWeeks = season ? seasonWeekAlignment(state, season.id, weekStart) : { planned: 0, onSeason: 0 };
 
   return (
     <div className="review-page">
@@ -85,9 +81,9 @@ export function ReviewView() {
             })}
           </ul>
           <p className="hint num">
-            {seasonWeeks.length === 0
+            {seasonWeeks.planned === 0
               ? 'No week planned yet this season.'
-              : `${weeksOnSeason} of ${seasonWeeks.length} planned week${seasonWeeks.length === 1 ? '' : 's'} put a season goal in the three.`}
+              : `${seasonWeeks.onSeason} of ${seasonWeeks.planned} planned week${seasonWeeks.planned === 1 ? '' : 's'} put a season goal in the three.`}
           </p>
         </section>
       )}

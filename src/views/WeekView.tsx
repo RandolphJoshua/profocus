@@ -5,6 +5,7 @@ import { BlockEditor, newDraft, type BlockDraft } from '../components/BlockEdito
 import { DayColumn, TimeGutter } from '../components/DayColumn';
 import { addDays, formatDay, formatDuration, shortWeekday, startOfWeek, weekDays } from '../lib/date';
 import { focusMinutesOn } from '../lib/stats';
+import { useCalendar } from '../state/calendar';
 import { useStore, useToday } from '../state/store';
 import { byPriority } from './TodayView';
 
@@ -12,6 +13,7 @@ const HOUR = 48;
 
 export function WeekView() {
   const { state } = useStore();
+  const calendar = useCalendar();
   const today = useToday();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today, state.settings.weekStartsOn));
   const [draft, setDraft] = useState<BlockDraft | null>(null);
@@ -34,6 +36,9 @@ export function WeekView() {
           <p className="sub num">{formatDay(weekStart, { month: 'long', day: 'numeric' })} – {formatDay(end, { month: weekStart.slice(5, 7) === end.slice(5, 7) ? undefined : 'long', day: 'numeric' })} · {formatDuration(weekFocus)} focused</p>
         </div>
         <span className="spacer" />
+        {calendar.status === 'connected' && calendar.lastImportAt && (
+          <span className="calendar-note num">Calendar imported {new Date(calendar.lastImportAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        )}
         <div className="row gap" role="group" aria-label="Week navigation">
           <button type="button" className="btn" onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label="Previous week">←</button>
           <button type="button" className="btn" onClick={() => setWeekStart(startOfWeek(today, state.settings.weekStartsOn))}>This week</button>

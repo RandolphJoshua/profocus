@@ -140,12 +140,14 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
                 const top = (Math.max(b.start, dayStart) - dayStart) * pxPerMin;
         const h = Math.max((Math.min(b.end, dayEnd) - Math.max(b.start, dayStart)) * pxPerMin, 14);
         const short = b.end - b.start <= 30;
+        const external = b.source === 'google';
         return (
           <div
             key={b.id}
-            className={`block kind-${b.kind} ${task?.done ? 'is-done' : ''} ${short ? 'is-short' : ''}`}
+            className={`block kind-${b.kind} ${task?.done ? 'is-done' : ''} ${short ? 'is-short' : ''} ${external ? 'is-external' : ''}`}
             style={{ top, height: h, '--c': project?.color } as CSSProperties}
-            onPointerDown={(e) => startDrag(e, { mode: 'move', id: b.id, grabOffset: minAt(e.clientY) - b.start, moved: false })}
+            onPointerDown={external ? (e) => e.stopPropagation() : (e) => startDrag(e, { mode: 'move', id: b.id, grabOffset: minAt(e.clientY) - b.start, moved: false })}
+            onClick={external ? () => onSelect(b) : undefined}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
@@ -156,13 +158,15 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
             tabIndex={0}
             aria-label={`${b.title}, ${formatMinutes(b.start)} to ${formatMinutes(b.end)}`}
           >
-            <span className="block-title">{project && <i className="dot" />}{b.title || 'Untitled'}</span>
+            <span className="block-title">{external && <span className="block-source" aria-hidden>G</span>}{project && <i className="dot" />}{b.title || 'Untitled'}</span>
             <span className="block-time num">{formatMinutes(b.start)} – {formatMinutes(b.end)}</span>
-            <span
-              className="block-resize"
-              onPointerDown={(e) => startDrag(e, { mode: 'resize', id: b.id, grabOffset: 0, moved: false })}
-              aria-hidden
-            />
+            {!external && (
+              <span
+                className="block-resize"
+                onPointerDown={(e) => startDrag(e, { mode: 'resize', id: b.id, grabOffset: 0, moved: false })}
+                aria-hidden
+              />
+            )}
           </div>
         );
       })}

@@ -546,3 +546,11 @@ body:has(.app.is-focus) { background: var(--surface); }
 @media (max-width: 760px) {
   .sync-line { display: none; }
 }
+
+/* Google Calendar import (read-only blocks) */
+.block.is-external { cursor: default; }
+.block.is-external:active { cursor: default; }
+.block-source { color: var(--muted); margin-right: 6px; font-size: var(--fs-small); }
+.calendar-note { color: var(--muted); font-size: var(--fs-small); white-space: nowrap; }
+.calendar-line { align-items: baseline; flex-wrap: wrap; }
+.calendar-line .link-btn { padding: 0; }

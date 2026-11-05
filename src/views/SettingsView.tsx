@@ -3,8 +3,47 @@ import { todayKey } from '../lib/date';
 import { emptyState, normalizeState } from '../lib/storage';
 import type { Settings, Theme } from '../lib/types';
 import { useAuth } from '../state/auth';
+import { useCalendar } from '../state/calendar';
 import { useStore } from '../state/store';
 import { useSync } from '../state/sync';
+
+function CalendarLine() {
+  const cal = useCalendar();
+  const { state } = useStore();
+  const linked = state.settings.calendarConnected === true;
+  const time = cal.lastImportAt ? new Date(cal.lastImportAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  return (
+    <div className="row gap calendar-line">
+      <span className="muted">Google Calendar:</span>
+      {cal.status === 'off' && (
+        <>
+          <span className="muted">{linked ? 'Disconnected' : 'Not connected'}</span>
+          <button type="button" className="link-btn" onClick={cal.connect}>{linked ? 'Reconnect' : 'Connect'}</button>
+        </>
+      )}
+      {cal.status === 'loading' && <span className="muted">Importing…</span>}
+      {cal.status === 'connected' && (
+        <>
+          <span className="muted num">Connected · imported {time}</span>
+          <button type="button" className="link-btn" onClick={() => void cal.refresh()}>Refresh</button>
+          <button type="button" className="link-btn" onClick={cal.disconnect}>Disconnect</button>
+        </>
+      )}
+      {cal.status === 'expired' && (
+        <>
+          <span className="muted">Expired</span>
+          <button type="button" className="link-btn" onClick={cal.connect}>Reconnect</button>
+        </>
+      )}
+      {cal.status === 'error' && (
+        <>
+          <span role="status" className="sync-error">{cal.error}</span>
+          <button type="button" className="link-btn" onClick={cal.connect}>Reconnect</button>
+        </>
+      )}
+    </div>
+  );
+}
 
 function AccountSection() {
   const { user, status, signInWithGoogle, sendMagicLink, signOut } = useAuth();
@@ -50,6 +89,7 @@ function AccountSection() {
             <p role="status" className={sync.status === 'error' ? 'sync-error' : 'muted'}>
               {sync.status === 'error' ? sync.error : sync.status === 'syncing' ? 'Syncing…' : `Synced · last saved ${lastSaved}`}
             </p>
+            <CalendarLine />
             <div className="row gap">
               <button type="button" className="link-btn" onClick={() => void signOut()}>Sign out</button>
             </div>

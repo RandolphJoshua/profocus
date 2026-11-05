@@ -50,6 +50,10 @@ export interface TimeBlock {
   kind: BlockKind;
   taskId?: ID;
   projectId?: ID;
+  /** Imported from an external calendar: read-only in the editor. */
+  source?: 'google';
+  /** The external calendar's event id. */
+  externalId?: string;
 }
 
 export interface FocusSession {
@@ -116,6 +120,8 @@ export interface Settings {
   weekStartsOn: 0 | 1;
   theme: Theme;
   sound: boolean;
+  /** A Google Calendar has been linked (on this or another device). */
+  calendarConnected?: boolean;
 }
 
 export interface AppState {

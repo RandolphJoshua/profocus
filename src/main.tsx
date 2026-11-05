@@ -1,3 +1,4 @@
+import './features.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
@@ -9,6 +10,7 @@ import { StoreProvider } from './state/store';
 import { SyncProvider } from './state/sync';
 import { TimerProvider } from './state/timer';
 import './styles.css';
+import { CalendarProvider } from './state/calendar';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('#root element missing from index.html');
@@ -27,9 +29,11 @@ createRoot(root).render(
     <StoreProvider initial={wantsDemo ? demoState(todayKey()) : undefined}>
       <AuthProvider>
         <SyncProvider>
-          <TimerProvider>
-            <App />
-          </TimerProvider>
+          <CalendarProvider>
+            <TimerProvider>
+              <App />
+            </TimerProvider>
+          </CalendarProvider>
         </SyncProvider>
       </AuthProvider>
     </StoreProvider>

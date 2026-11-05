@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatDay } from '../lib/date';
+import { formatDay, formatMinutes } from '../lib/date';
 import { uid } from '../lib/storage';
 import type { BlockKind, DateKey, TimeBlock } from '../lib/types';
 import { useStore } from '../state/store';
@@ -38,6 +38,21 @@ export function BlockEditor({ draft, onClose }: { draft: BlockDraft; onClose: ()
     dispatch(isNew ? { type: 'ADD_BLOCK', block } : { type: 'UPDATE_BLOCK', id: block.id, patch: block });
     onClose();
   };
+
+  if (draft.source === 'google') {
+    return (
+      <Modal title={draft.title || 'Busy'} onClose={onClose}>
+        <div className="stack">
+          <p className="muted">{formatDay(draft.date)}</p>
+          <p className="num">{formatMinutes(draft.start)} – {formatMinutes(draft.end)}</p>
+          <p className="muted">From Google Calendar</p>
+          <div className="row gap">
+            <button type="button" className="btn" onClick={onClose}>Close</button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal title={isNew ? 'New time block' : 'Edit time block'} onClose={onClose}>

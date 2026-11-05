@@ -10,12 +10,16 @@ export type AuthStatus = 'disabled' | 'loading' | 'signed-out' | 'signed-in';
 interface AuthValue {
   user: AuthUser | null;
   status: AuthStatus;
-  signInWithGoogle: () => Promise<string | undefined>;
+  /** Google access token from a sign-in that asked for Calendar access. Memory only; Supabase does not refresh it. */
+  providerToken: string | null;
+  signInWithGoogle: (opts?: { calendar?: boolean }) => Promise<string | undefined>;
   sendMagicLink: (email: string) => Promise<string | undefined>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
+
+export const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
 
 const redirectUrl = () => window.location.origin + window.location.pathname;
 
@@ -29,14 +33,19 @@ function stripAuthCode() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [providerToken, setProviderToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(supabase !== null);
 
   useEffect(() => {
     if (!supabase) return;
     const client = supabase;
     let live = true;
-    const apply = (session: { user: { id: string; email?: string } } | null) => {
-      if (live) setUser(session ? { id: session.user.id, email: session.user.email ?? '' } : null);
+    const apply = (session: { user: { id: string; email?: string }; provider_token?: string | null } | null) => {
+      if (!live) return;
+      setUser(session ? { id: session.user.id, email: session.user.email ?? '' } : null);
+      // Token refreshes arrive without a provider token; keep the one we have until sign-out.
+      if (!session) setProviderToken(null);
+      else if (session.provider_token) setProviderToken(session.provider_token);
     };
     client.auth
       .getSession()
@@ -56,10 +65,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(async (opts?: { calendar?: boolean }) => {
     if (!supabase) return 'Cloud sync is not configured.';
     try {
-      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectUrl() } });
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: opts?.calendar
+          ? { redirectTo: redirectUrl(), scopes: CALENDAR_SCOPE, queryParams: { access_type: 'offline', prompt: 'consent' } }
+          : { redirectTo: redirectUrl() },
+      });
       return error?.message;
     } catch (e) {
       return e instanceof Error ? e.message : 'Could not start Google sign-in.';
@@ -84,10 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Local data is untouched either way; the next auth event settles the state.
     }
     setUser(null);
+    setProviderToken(null);
   }, []);
 
   const status: AuthStatus = supabase === null ? 'disabled' : loading ? 'loading' : user ? 'signed-in' : 'signed-out';
-  const value = useMemo(() => ({ user, status, signInWithGoogle, sendMagicLink, signOut }), [user, status, signInWithGoogle, sendMagicLink, signOut]);
+  const value = useMemo(() => ({ user, status, providerToken, signInWithGoogle, sendMagicLink, signOut }), [user, status, providerToken, signInWithGoogle, sendMagicLink, signOut]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

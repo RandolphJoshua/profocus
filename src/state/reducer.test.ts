@@ -1,3 +1,4 @@
+import type { TimeBlock } from '../lib/types';
 import { parseQuickAdd } from '../lib/parse';
 import { emptyState } from '../lib/storage';
 import { nextFreeSlot, quickAddActions, reducer } from './reducer';
@@ -126,5 +127,30 @@ describe('nextFreeSlot', () => {
   });
   it('returns null when nothing fits', () => {
     expect(nextFreeSlot([blk(420, 1300)], TODAY, 420, 60, 420, 1320)).toBeNull();
+  });
+});
+
+describe('SET_EXTERNAL_BLOCKS', () => {
+  const g = (externalId: string, date: string, title = 'Ev'): TimeBlock => ({ id: `g-${externalId}`, date, start: 600, end: 660, title, kind: 'meeting', source: 'google', externalId });
+  const mine: TimeBlock = { id: 'b-mine', date: '2026-11-04', start: 540, end: 600, title: 'Mine', kind: 'focus' };
+  const range = { from: '2026-11-02', to: '2026-11-08' };
+
+  it('replaces imported blocks inside the range and keeps those outside and user-made ones', () => {
+    const s0 = { ...emptyState(), blocks: [mine, g('old', '2026-11-04'), g('far', '2026-12-01')] };
+    const s1 = reducer(s0, { type: 'SET_EXTERNAL_BLOCKS', source: 'google', range, blocks: [g('new', '2026-11-05')] });
+    expect(s1.blocks.map((b) => b.id).sort()).toEqual(['b-mine', 'g-far', 'g-new']);
+  });
+
+  it('replaces duplicates by externalId', () => {
+    const s0 = { ...emptyState(), blocks: [g('x', '2026-11-04', 'Before')] };
+    const s1 = reducer(s0, { type: 'SET_EXTERNAL_BLOCKS', source: 'google', range, blocks: [g('x', '2026-11-04', 'After')] });
+    expect(s1.blocks).toHaveLength(1);
+    expect(s1.blocks[0]?.title).toBe('After');
+  });
+
+  it('clears the range with an empty list', () => {
+    const s0 = { ...emptyState(), blocks: [mine, g('a', '2026-11-03')] };
+    const s1 = reducer(s0, { type: 'SET_EXTERNAL_BLOCKS', source: 'google', range, blocks: [] });
+    expect(s1.blocks).toEqual([mine]);
   });
 });

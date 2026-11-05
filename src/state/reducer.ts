@@ -21,6 +21,7 @@ export type Action =
   | { type: 'ADD_BLOCK'; block: TimeBlock }
   | { type: 'UPDATE_BLOCK'; id: ID; patch: Partial<TimeBlock> }
   | { type: 'DELETE_BLOCK'; id: ID }
+  | { type: 'SET_EXTERNAL_BLOCKS'; source: 'google'; range: { from: DateKey; to: DateKey }; blocks: TimeBlock[] }
   | { type: 'LOG_SESSION'; session: FocusSession }
   | { type: 'ADD_HABIT'; habit: Habit }
   | { type: 'UPDATE_HABIT'; id: ID; patch: Partial<Habit> }
@@ -109,6 +110,13 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, blocks: patchById(state.blocks, action.id, action.patch) };
     case 'DELETE_BLOCK':
       return { ...state, blocks: state.blocks.filter((b) => b.id !== action.id) };
+    case 'SET_EXTERNAL_BLOCKS': {
+      const incoming = new Set(action.blocks.map((b) => b.externalId));
+      const kept = state.blocks.filter(
+        (b) => b.source !== action.source || !(b.date >= action.range.from && b.date <= action.range.to || incoming.has(b.externalId)),
+      );
+      return { ...state, blocks: [...kept, ...action.blocks] };
+    }
     case 'LOG_SESSION':
       return { ...state, sessions: [...state.sessions, action.session] };
     case 'ADD_HABIT':

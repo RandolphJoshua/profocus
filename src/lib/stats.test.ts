@@ -157,6 +157,11 @@ describe('goalTrajectory', () => {
   it('treats done goals as on track at 100%', () => {
     expect(goalTrajectory(build(0, 5, { status: 'done' }), 'g', TODAY)).toMatchObject({ status: 'on-track', actual: 1 });
   });
+  it('measures from the local date of createdAt, not the UTC date', () => {
+    const local = new Date(2026, 10, 5, 23, 30); // 23:30 local on 2026-11-05
+    const g = build(1, 1, { createdAt: local.toISOString() });
+    expect(goalTrajectory(g, 'g', '2026-11-05')).toMatchObject({ dayOf: 1, daysTotal: 20 });
+  });
   it('clamps past the target date', () => {
     expect(goalTrajectory(build(1, 1), 'g', '2026-12-31')).toMatchObject({ dayOf: 20, daysLeft: 0 });
   });

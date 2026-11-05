@@ -25,7 +25,7 @@ function CalendarLine() {
       {cal.status === 'connected' && (
         <>
           <span className="muted num">Connected · imported {time}</span>
-          <button type="button" className="link-btn" onClick={() => void cal.refresh()}>Refresh</button>
+          <button type="button" className="link-btn" onClick={() => void cal.refresh(undefined, { force: true })}>Refresh</button>
           <button type="button" className="link-btn" onClick={cal.disconnect}>Disconnect</button>
         </>
       )}

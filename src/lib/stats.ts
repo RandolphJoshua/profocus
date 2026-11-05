@@ -1,4 +1,4 @@
-import { addDays, fromKey, weekDays } from './date';
+import { addDays, fromKey, toKey, weekDays } from './date';
 import { nextFreeSlot } from '../state/reducer';
 import type { AppState, DateKey, FocusSession, ID, Task, TimeBlock } from './types';
 
@@ -219,7 +219,7 @@ export function goalTrajectory(state: AppState, goalId: ID, today: DateKey): Goa
   const share = tasksDone + tasksOpen ? tasksDone / (tasksDone + tasksOpen) : 0;
   if (!goal?.targetDate) return { dayOf: 0, daysTotal: 0, daysLeft: 0, expected: 0, actual: share, status: 'no-date' };
 
-  const created = goal.createdAt.slice(0, 10);
+  const created = toKey(new Date(goal.createdAt));
   const daysTotal = Math.max(1, daysBetween(created, goal.targetDate));
   const elapsed = Math.max(0, daysBetween(created, today));
   const dayOf = Math.min(daysTotal, elapsed + 1);

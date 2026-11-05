@@ -59,9 +59,10 @@ export function PlanWeek({ week, onClose }: { week: DateKey; onClose: () => void
   // Spread the rest across different days: the first three days that are still ahead (Mon, Tue, Wed for a future week).
   const spreadDays = days.filter((d) => d >= today).length ? days.filter((d) => d >= today) : days;
   const pending = filled.filter((p) => !added[p.id] && !hasTask(p));
+  const addedCount = filled.length - pending.length;
   const addAll = () => {
     const chosen: Record<string, DateKey> = {};
-    pending.forEach((p, i) => { chosen[p.id] = dayFor[p.id] ?? spreadDays[i % spreadDays.length] ?? defaultDay; });
+    pending.forEach((p, i) => { chosen[p.id] = dayFor[p.id] ?? spreadDays[(addedCount + i) % spreadDays.length] ?? defaultDay; });
     const now = new Date().toISOString();
     for (const p of pending) {
       const project = state.projects.find((x) => x.goalId === p.goalId && !x.archived && p.goalId);

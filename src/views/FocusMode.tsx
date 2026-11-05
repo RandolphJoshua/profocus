@@ -75,6 +75,11 @@ export function FocusMode({ onExit }: { onExit: () => void }) {
   }, [timer.lastSessionId]);
   const rated = state.sessions.find((s) => s.id === ratingFor);
   const noise = useBrownNoise();
+  const soundEnabled = state.settings.sound !== false;
+  const { on: noiseOn, toggle: toggleNoise } = noise;
+  useEffect(() => {
+    if (!soundEnabled && noiseOn) toggleNoise();
+  }, [soundEnabled, noiseOn, toggleNoise]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -134,7 +139,7 @@ export function FocusMode({ onExit }: { onExit: () => void }) {
           )}
         </div>
 
-        {state.settings.sound !== false && (
+        {soundEnabled && (
           <button type="button" className="btn ghost focus-sound" aria-pressed={noise.on} onClick={noise.toggle}>
             Sound: {noise.on ? 'brown noise' : 'off'}
           </button>

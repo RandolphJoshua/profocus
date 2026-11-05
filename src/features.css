@@ -42,3 +42,9 @@
 .past-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .past-season { background: var(--panel); border-radius: var(--radius-card); padding: 12px var(--pad); display: flex; flex-direction: column; gap: 4px; }
 .past-top { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; }
+
+/* v0.5 season summary on Review */
+.season-summary { margin-bottom: var(--gap); }
+.season-goal-list { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 4px; }
+.season-goal-list li { display: flex; align-items: center; gap: 10px; font-size: var(--fs-body); }
+.season-goal-name.is-done { color: var(--muted); text-decoration: line-through; }

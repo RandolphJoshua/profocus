@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { addDays, formatDay, formatDuration, shortWeekday, startOfWeek } from '../lib/date';
-import { focusQuality, weekScores, weekStats } from '../lib/stats';
+import { currentSeason, focusQuality, goalTrajectory, seasonProgress, weekScores, weekStats } from '../lib/stats';
+import { progressLine } from '../components/SeasonPanel';
 import { useStore, useToday } from '../state/store';
 
 export function ReviewView() {
@@ -16,6 +17,14 @@ export function ReviewView() {
   const maxDay = Math.max(60, ...stats.focusByDay);
   const maxProj = Math.max(1, ...stats.focusByProject.map((p) => p.minutes));
   const setReview = (patch: typeof review) => dispatch({ type: 'SET_REVIEW', week: weekStart, patch });
+  const season = currentSeason(state.seasons, today);
+  const seasonP = season ? seasonProgress(state, season.id, today) : undefined;
+  const seasonGoals = season ? season.goalIds.map((id) => state.goals.find((g) => g.id === id)).filter((g): g is NonNullable<typeof g> => !!g) : [];
+  // Weeks of this season (up to this week) whose priorities include a season goal.
+  const seasonWeeks = season
+    ? Object.entries(state.reviews).filter(([w, r]) => w >= startOfWeek(season.start, state.settings.weekStartsOn) && w <= weekStart && (r.priorities?.length ?? 0) > 0)
+    : [];
+  const weeksOnSeason = seasonWeeks.filter(([, r]) => r.priorities?.some((p) => p.goalId && season?.goalIds.includes(p.goalId))).length;
 
   return (
     <div className="review-page">
@@ -54,6 +63,34 @@ export function ReviewView() {
         </div>
         <p className="hint">40 highlight · 30 focus vs plan · 15 habits · 15 tasks</p>
       </section>
+
+      {season && seasonP && (
+        <section className="panel season-summary" aria-label="Season summary">
+          <h2 className="panel-title">Season · {season.name}</h2>
+          <p className="season-line num">{progressLine(seasonP)}</p>
+          <div className="season-track" aria-hidden>
+            <span className="season-fill" style={{ width: `${(seasonP.daysElapsed / Math.max(1, seasonP.daysElapsed + seasonP.daysLeft)) * 100}%` }} />
+          </div>
+          <ul className="season-goal-list">
+            {seasonGoals.map((g) => {
+              const tr = goalTrajectory(state, g.id, today);
+              return (
+                <li key={g.id} className="num">
+                  <span className={`season-goal-name ${g.status === 'done' ? 'is-done' : ''}`}>{g.title}</span>
+                  {tr.status === 'no-date'
+                    ? <span className="muted">No target date</span>
+                    : <span className={`traj-pill is-${tr.status}`}>{tr.status === 'on-track' ? 'On track' : tr.status === 'adjust' ? 'Adjust' : 'Off track'}</span>}
+                </li>
+              );
+            })}
+          </ul>
+          <p className="hint num">
+            {seasonWeeks.length === 0
+              ? 'No week planned yet this season.'
+              : `${weeksOnSeason} of ${seasonWeeks.length} planned week${seasonWeeks.length === 1 ? '' : 's'} put a season goal in the three.`}
+          </p>
+        </section>
+      )}
 
       <div className="review-grid">
         <section className="card">

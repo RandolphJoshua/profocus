@@ -142,3 +142,34 @@ describe('Goals', () => {
     expect(screen.getByText('1 active · 0 done')).toBeTruthy();
   });
 });
+
+describe('Focus mode sound', () => {
+  it('toggles brown noise and shows nothing when sound is off in settings', () => {
+    const start = vi.fn();
+    const close = vi.fn(() => Promise.resolve());
+    class FakeAudioContext {
+      sampleRate = 8000;
+      destination = {};
+      createBuffer(_c: number, length: number) { return { getChannelData: () => new Float32Array(length) }; }
+      createBufferSource() { return { buffer: null, loop: false, connect: vi.fn(), start }; }
+      createGain() { return { gain: { value: 0 }, connect: vi.fn() }; }
+      close = close;
+    }
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+    window.AudioContext = FakeAudioContext as unknown as typeof AudioContext;
+    const view = mount(emptyState(), 'focus');
+    const toggle = screen.getByRole('button', { name: 'Sound: off' });
+    fireEvent.click(toggle);
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Sound: brown noise' }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Sound: brown noise' }));
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Sound: off' })).toBeTruthy();
+    view.unmount();
+    vi.unstubAllGlobals();
+
+    const muted = emptyState();
+    mount({ ...muted, settings: { ...muted.settings, sound: false } }, 'focus');
+    expect(screen.queryByRole('button', { name: /^Sound:/ })).toBeNull();
+  });
+});

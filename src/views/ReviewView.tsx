@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { addDays, formatDay, formatDuration, shortWeekday, startOfWeek } from '../lib/date';
-import { weekScores, weekStats } from '../lib/stats';
+import { focusQuality, weekScores, weekStats } from '../lib/stats';
 import { useStore, useToday } from '../state/store';
 
 export function ReviewView() {
@@ -9,6 +9,7 @@ export function ReviewView() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today, state.settings.weekStartsOn));
   const stats = weekStats(state, weekStart, today);
   const scores = weekScores(state, weekStart, today);
+  const quality = focusQuality(state.sessions, stats.days);
   const elapsed = scores.filter((s) => s.date <= today);
   const mean = elapsed.length ? Math.round(elapsed.reduce((n, s) => n + s.score, 0) / elapsed.length) : undefined;
   const review = state.reviews[weekStart] ?? {};
@@ -36,6 +37,11 @@ export function ReviewView() {
         <div className="stat"><span className="stat-label">Tasks done</span><span className="stat-num num">{stats.tasksCompleted}</span></div>
         <div className="stat"><span className="stat-label">Highlights hit</span><span className="stat-num num">{stats.highlightsDone}<small>/{stats.highlightsSet || 0}</small></span></div>
         <div className="stat"><span className="stat-label">Habit consistency</span><span className="stat-num num">{Math.round(stats.habitRate * 100)}%</span></div>
+        <div className="stat">
+          <span className="stat-label">Focus quality</span>
+          <span className="stat-num num">{quality.quality === null ? '—' : `${quality.quality}%`}</span>
+          <span className="stat-cap num">{quality.rated} rated</span>
+        </div>
       </div>
 
       <section className="panel score-panel" aria-label="Daily scores">

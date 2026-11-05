@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatClock } from '../lib/date';
 import { useStore, useToday } from '../state/store';
 import { useTimer, type TimerMode } from '../state/timer';
@@ -8,6 +8,53 @@ const RATINGS = [{ value: 1, label: 'Rough' }, { value: 2, label: 'OK' }, { valu
 const R = 128;
 const SIZE = (R + 8) * 2;
 const C = 2 * Math.PI * R;
+const NOISE_SECONDS = 2;
+const NOISE_GAIN = 0.08;
+
+/** 2 s of brown noise (integrated white noise, normalised), loopable. */
+function brownNoise(ctx: AudioContext): AudioBuffer {
+  const buffer = ctx.createBuffer(1, ctx.sampleRate * NOISE_SECONDS, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < data.length; i++) {
+    last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
+    data[i] = last * 3.5;
+  }
+  return buffer;
+}
+
+/** Ambient brown noise through WebAudio. `toggle` must run from a user gesture; the context closes on unmount. */
+function useBrownNoise() {
+  const [on, setOn] = useState(false);
+  const ctxRef = useRef<AudioContext | undefined>();
+  const stop = useCallback(() => {
+    const ctx = ctxRef.current;
+    ctxRef.current = undefined;
+    if (ctx) void ctx.close().catch(() => undefined);
+  }, []);
+  const toggle = useCallback(() => {
+    if (ctxRef.current) {
+      stop();
+      setOn(false);
+      return;
+    }
+    const Ctor = window.AudioContext;
+    if (!Ctor) return;
+    const ctx = new Ctor();
+    const source = ctx.createBufferSource();
+    source.buffer = brownNoise(ctx);
+    source.loop = true;
+    const gain = ctx.createGain();
+    gain.gain.value = NOISE_GAIN;
+    source.connect(gain);
+    gain.connect(ctx.destination);
+    source.start();
+    ctxRef.current = ctx;
+    setOn(true);
+  }, [stop]);
+  useEffect(() => stop, [stop]);
+  return { on, toggle };
+}
 
 /** Full-screen single-task view. Shown over the app while the hash is #focus. */
 export function FocusMode({ onExit }: { onExit: () => void }) {
@@ -27,6 +74,7 @@ export function FocusMode({ onExit }: { onExit: () => void }) {
     seen.current = timer.lastSessionId;
   }, [timer.lastSessionId]);
   const rated = state.sessions.find((s) => s.id === ratingFor);
+  const noise = useBrownNoise();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -85,6 +133,12 @@ export function FocusMode({ onExit }: { onExit: () => void }) {
             <button type="button" className="btn" onClick={timer.stopAndLog}>Stop &amp; log</button>
           )}
         </div>
+
+        {state.settings.sound !== false && (
+          <button type="button" className="btn ghost focus-sound" aria-pressed={noise.on} onClick={noise.toggle}>
+            Sound: {noise.on ? 'brown noise' : 'off'}
+          </button>
+        )}
 
         {rated && (
           <div className="focus-rate" role="group" aria-label="How did that session go?">

@@ -56,6 +56,24 @@ export function PlanWeek({ week, onClose }: { week: DateKey; onClose: () => void
     setAdded((a) => ({ ...a, [p.id]: true }));
   };
 
+  // Spread the rest across different days: the first three days that are still ahead (Mon, Tue, Wed for a future week).
+  const spreadDays = days.filter((d) => d >= today).length ? days.filter((d) => d >= today) : days;
+  const pending = filled.filter((p) => !added[p.id] && !hasTask(p));
+  const addAll = () => {
+    const chosen: Record<string, DateKey> = {};
+    pending.forEach((p, i) => { chosen[p.id] = dayFor[p.id] ?? spreadDays[i % spreadDays.length] ?? defaultDay; });
+    const now = new Date().toISOString();
+    for (const p of pending) {
+      const project = state.projects.find((x) => x.goalId === p.goalId && !x.archived && p.goalId);
+      dispatch({
+        type: 'ADD_TASK',
+        task: { id: uid('t-'), title: p.title.trim(), projectId: project?.id, date: chosen[p.id], estimateMin: estimate[p.id] ?? 90, done: false, createdAt: now },
+      });
+    }
+    setDayFor((d) => ({ ...d, ...chosen }));
+    setAdded((a) => ({ ...a, ...Object.fromEntries(pending.map((p) => [p.id, true])) }));
+  };
+
   return (
     <Modal title="Plan my week" onClose={onClose}>
       <p className="muted num ritual-step">Step {step + 1} of 3 · {STEPS[step]}</p>
@@ -101,6 +119,11 @@ export function PlanWeek({ week, onClose }: { week: DateKey; onClose: () => void
       {step === 2 && (
         <div className="stack">
           {filled.length === 0 && <p className="muted">No priorities to protect time for. Go back and add one.</p>}
+          {pending.length > 1 && (
+            <div className="row gap">
+              <button type="button" className="btn" onClick={addAll}>{pending.length === 3 ? 'Add all three' : `Add all ${pending.length}`}</button>
+            </div>
+          )}
           {filled.map((p) => (
             <div key={p.id} className="protect-row">
               <p className="protect-title">{p.title}</p>

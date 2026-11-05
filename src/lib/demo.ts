@@ -27,7 +27,7 @@ export function demoState(today: DateKey): AppState {
   const projects = ['p-writing', 'p-work', 'p-writing', 'p-work', 'p-health', 'p-writing', 'p-writing'];
   const sessions: FocusSession[] = mins.map((minutes, i) => {
     const date = addDays(today, i - 6);
-    const rating = i === 6 ? 3 : i === 5 ? 2 : undefined; // two rated sessions
+    const rating = i === 6 ? 3 : i === 5 ? 2 : i === 4 ? 1 : undefined; // three rated sessions
     return { id: `s${i + 1}`, startedAt: at(date, 9), date, minutes, projectId: projects[i], taskId: i === 6 ? 't1' : undefined, rating };
   });
 
@@ -63,7 +63,7 @@ export function demoState(today: DateKey): AppState {
     ],
     goals: [
       { id: 'g-book', title: 'Finish the book draft', why: 'Send the manuscript to my editor', targetDate: addDays(today, 120), status: 'active', createdAt: created },
-      { id: 'g-fit', title: 'Get fitter', why: 'Energy for the long days', status: 'active', createdAt: created },
+      { id: 'g-fit', title: 'Get fitter', why: 'Energy for the long days', targetDate: addDays(today, 33), status: 'active', createdAt: created },
     ],
     reviews: {
       [week]: {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal } from './Modal';
 import { formatMinutes, minutesNow } from '../lib/date';
+import { planDay } from '../lib/stats';
 import { uid } from '../lib/storage';
 import type { DateKey, Task } from '../lib/types';
 import { nextFreeSlot } from '../state/reducer';
@@ -53,6 +54,21 @@ export function PlanDay({ onClose }: { onClose: () => void }) {
       type: 'ADD_BLOCK',
       block: { id: uid('b-'), date: today, start: slot.start, end: slot.end, title: t.title, kind: 'focus', taskId: t.id, projectId: t.projectId },
     });
+  };
+
+  const unscheduled = todays.filter((t) => !state.blocks.some((b) => b.date === today && b.taskId === t.id));
+  const scheduleAll = () => {
+    const placed = planDay(state.blocks, unscheduled, today, minutesNow(), dayStartHour * 60, dayEndHour * 60);
+    for (const { taskId, start, end } of placed) {
+      const t = unscheduled.find((x) => x.id === taskId);
+      if (!t) continue;
+      dispatch({
+        type: 'ADD_BLOCK',
+        block: { id: uid('b-'), date: today, start, end, title: t.title, kind: 'focus', taskId: t.id, projectId: t.projectId },
+      });
+    }
+    const placedIds = new Set(placed.map((p) => p.taskId));
+    setFull((f) => ({ ...f, ...Object.fromEntries(unscheduled.filter((t) => !placedIds.has(t.id)).map((t) => [t.id, true])) }));
   };
 
   return (
@@ -112,6 +128,11 @@ export function PlanDay({ onClose }: { onClose: () => void }) {
       {step === 2 && (
         <div className="stack">
           {todays.length === 0 && <p className="muted">No open tasks for today.</p>}
+          {unscheduled.some((t) => !full[t.id]) && (
+            <div className="row gap">
+              <button type="button" className="btn" onClick={scheduleAll}>Schedule everything</button>
+            </div>
+          )}
           <ul className="pick-list">
             {todays.map((t) => {
               const block = state.blocks.find((b) => b.date === today && b.taskId === t.id);

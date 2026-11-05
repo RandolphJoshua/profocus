@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { formatDuration } from '../lib/date';
-import { goalProgress } from '../lib/stats';
+import { goalProgress, goalTrajectory, type Trajectory } from '../lib/stats';
 import { uid } from '../lib/storage';
 import type { Goal } from '../lib/types';
 import { useStore, useToday } from '../state/store';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+const TRAJECTORY_LABEL: Record<Exclude<Trajectory, 'no-date'>, string> = {
+  'on-track': 'On track', adjust: 'Adjust', 'off-track': 'Off track',
+};
 
 export function GoalsView() {
   const { state, dispatch } = useStore();
@@ -46,6 +50,7 @@ export function GoalsView() {
       <ul className="goal-list">
         {ordered.map((g) => {
           const pr = goalProgress(state, g.id, today);
+          const tr = goalTrajectory(state, g.id, today);
           const linked = state.projects.filter((p) => p.goalId === g.id);
           return (
             <li key={g.id} className={`goal ${g.status === 'done' ? 'is-done' : ''}`}>
@@ -56,6 +61,23 @@ export function GoalsView() {
                 <span className="muted num">{g.targetDate ? `Due ${g.targetDate}` : 'No date'}</span>
               </div>
               {g.why && <p className="muted">{g.why}</p>}
+              {tr.status === 'no-date' ? (
+                <p className="traj-line muted">No target date</p>
+              ) : (
+                <>
+                  <p className="traj-line num">
+                    Day {tr.dayOf} of {tr.daysTotal} · {plural(tr.daysLeft, 'day')} left ·{' '}
+                    <span className={`traj-pill is-${tr.status}`}>{TRAJECTORY_LABEL[tr.status]}</span>
+                  </p>
+                  <div
+                    className="traj-track" role="img"
+                    aria-label={`${Math.round(tr.actual * 100)}% of tasks done, ${Math.round(tr.expected * 100)}% of the time used`}
+                  >
+                    <span className="traj-fill" style={{ width: `${tr.actual * 100}%` }} />
+                    <span className="traj-tick" style={{ left: `${tr.expected * 100}%` }} />
+                  </div>
+                </>
+              )}
               <p className="goal-progress num">
                 {formatDuration(pr.focusMin30d)} focused in 30 days · {plural(pr.tasksDone, 'task')} done · {pr.tasksOpen} open · prioritised {plural(pr.weeksPrioritised, 'week')}
               </p>

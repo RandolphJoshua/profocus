@@ -1,0 +1,24 @@
+/* v0.4 additions: goal trajectory, focus quality cell, focus-mode sound toggle. Tokens only. */
+
+.traj-line { margin: 0; font-size: var(--fs-body); }
+.traj-pill {
+  display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px;
+  font-size: var(--fs-small); font-weight: 500; vertical-align: 1px;
+}
+.traj-pill.is-on-track { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
+.traj-pill.is-adjust { background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
+.traj-pill.is-off-track { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+
+/* Bullet: share done (fill) against share of time used (tick). */
+.traj-track { position: relative; height: 4px; margin: 6px 0 4px; border-radius: 2px; background: var(--rule); }
+.traj-fill { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--accent); }
+.traj-tick { position: absolute; top: -3px; bottom: -3px; width: 1px; margin-left: -0.5px; background: var(--text); }
+
+.stat-row.panel { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.stat-cap { font-size: var(--fs-small); color: var(--muted); }
+@media (max-width: 760px) {
+  .stat-row.panel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+.focus-sound { align-self: center; }

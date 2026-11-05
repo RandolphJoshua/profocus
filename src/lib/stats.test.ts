@@ -1,5 +1,5 @@
 import { emptyState } from './storage';
-import { dayScore, goalProgress, habitStreak, plannedStreak, weekScores, weekStats } from './stats';
+import { dayScore, focusQuality, goalProgress, goalTrajectory, habitStreak, planDay, plannedStreak, weekScores, weekStats } from './stats';
 import type { AppState } from './types';
 
 describe('habitStreak', () => {
@@ -122,5 +122,76 @@ describe('goalProgress', () => {
     expect(goalProgress(s, 'g', '2026-11-04')).toEqual({
       goalId: 'g', focusMin30d: 55, tasksDone: 1, tasksOpen: 1, weeksPrioritised: 2, projects: ['p1'],
     });
+  });
+});
+
+describe('goalTrajectory', () => {
+  const TODAY = '2026-11-15'; // 10 days after creation, target 20 days after => dayOf 11 of 20
+  const build = (done: number, open: number, over: Partial<AppState['goals'][number]> = {}): AppState => ({
+    ...emptyState(),
+    projects: [{ id: 'p', name: 'A', color: '#0', goalId: 'g' }],
+    goals: [{ id: 'g', title: 'G', status: 'active', createdAt: '2026-11-05T09:00:00.000Z', targetDate: '2026-11-25', ...over }],
+    tasks: [
+      ...Array.from({ length: done }, (_, i) => ({ id: `d${i}`, title: '', projectId: 'p', done: true, createdAt: '' })),
+      ...Array.from({ length: open }, (_, i) => ({ id: `o${i}`, title: '', projectId: 'p', done: false, createdAt: '' })),
+    ],
+  });
+  it('counts days elapsed against the window', () => {
+    expect(goalTrajectory(build(1, 1), 'g', TODAY)).toMatchObject({ dayOf: 11, daysTotal: 20, daysLeft: 10, expected: 11 / 20, actual: 0.5 });
+  });
+  it('is on track within 0.1 of expected', () => {
+    expect(goalTrajectory(build(9, 11), 'g', TODAY).status).toBe('on-track'); // 0.45 >= 0.45
+  });
+  it('needs adjusting between 0.1 and 0.25 behind', () => {
+    expect(goalTrajectory(build(7, 13), 'g', TODAY).status).toBe('adjust'); // 0.35
+  });
+  it('is off track more than 0.25 behind', () => {
+    expect(goalTrajectory(build(1, 19), 'g', TODAY).status).toBe('off-track'); // 0.05
+  });
+  it('reads 0 actual with no tasks', () => {
+    expect(goalTrajectory(build(0, 0), 'g', TODAY)).toMatchObject({ actual: 0, status: 'off-track' });
+  });
+  it('has no status without a target date', () => {
+    expect(goalTrajectory(build(1, 1, { targetDate: undefined }), 'g', TODAY).status).toBe('no-date');
+  });
+  it('treats done goals as on track at 100%', () => {
+    expect(goalTrajectory(build(0, 5, { status: 'done' }), 'g', TODAY)).toMatchObject({ status: 'on-track', actual: 1 });
+  });
+  it('clamps past the target date', () => {
+    expect(goalTrajectory(build(1, 1), 'g', '2026-12-31')).toMatchObject({ dayOf: 20, daysLeft: 0 });
+  });
+});
+
+describe('planDay', () => {
+  const D = '2026-11-04';
+  const t = (id: string, estimateMin?: number, over = {}) => ({ id, title: id, done: false, createdAt: '', estimateMin, ...over });
+  it('chains placements so each task becomes busy for the next', () => {
+    const out = planDay([], [t('a', 60), t('b', 30)], D, 600, 540, 1080);
+    expect(out).toEqual([{ taskId: 'a', start: 600, end: 660 }, { taskId: 'b', start: 660, end: 690 }]);
+  });
+  it('steps around existing blocks', () => {
+    const blocks = [{ id: 'x', date: D, start: 600, end: 660, title: '', kind: 'meeting' as const }];
+    expect(planDay(blocks, [t('a', 60)], D, 600, 540, 1080)).toEqual([{ taskId: 'a', start: 660, end: 720 }]);
+  });
+  it('skips tasks that are already blocked or done, and those that do not fit', () => {
+    const blocks = [{ id: 'x', date: D, start: 540, end: 570, title: '', kind: 'focus' as const, taskId: 'has' }];
+    const out = planDay(blocks, [t('has', 30), t('fin', 30, { done: true }), t('big', 600), t('small', 15)], D, 540, 540, 1080);
+    expect(out).toEqual([{ taskId: 'small', start: 570, end: 585 }]);
+  });
+  it('defaults to 30 minutes', () => {
+    expect(planDay([], [t('a')], D, 540, 540, 1080)).toEqual([{ taskId: 'a', start: 540, end: 570 }]);
+  });
+});
+
+describe('focusQuality', () => {
+  const s = (date: string, rating?: 1 | 2 | 3) => ({ id: date + rating, startedAt: '', date, minutes: 25, rating });
+  it('maps 1/2/3 to 0/50/100 and averages', () => {
+    expect(focusQuality([s('2026-11-02', 1), s('2026-11-03', 3), s('2026-11-04', 3)], ['2026-11-02', '2026-11-03', '2026-11-04'])).toEqual({ rated: 3, quality: 67 });
+  });
+  it('ignores unrated sessions and days outside the range', () => {
+    expect(focusQuality([s('2026-11-02', 2), s('2026-11-02'), s('2026-10-01', 3)], ['2026-11-02'])).toEqual({ rated: 1, quality: 50 });
+  });
+  it('is null when nothing is rated', () => {
+    expect(focusQuality([s('2026-11-02')], ['2026-11-02'])).toEqual({ rated: 0, quality: null });
   });
 });

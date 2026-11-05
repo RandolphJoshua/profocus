@@ -6,7 +6,7 @@ coverage
 
 # design-skill working files (screenshots, reports); the plan and dealt sheet are kept
 .taste-skill/*
-!.taste-skill/plan.md
+!.taste-skill/plan*.md
 !.taste-skill/app/
 .taste-skill/app/*
 !.taste-skill/app/direction.json

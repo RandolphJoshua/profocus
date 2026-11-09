@@ -146,6 +146,7 @@ function CoachSection() {
           <p className="hint">Stays in this browser. Never synced.</p>
           <label>Model
             <input value={model} onChange={(e) => setModel(e.target.value)} placeholder={DEFAULT_MODELS[provider]} />
+            <span className="hint">Model names change; if the provider says one is unavailable, type the one it suggests and Test again.</span>
           </label>
           {provider === 'openai-compatible' && (
             <label>Base URL

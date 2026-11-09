@@ -128,7 +128,7 @@ describe('config storage', () => {
     expect(loadAiConfig()).toBeNull();
   });
   it('has default models', () => {
-    expect(DEFAULT_MODELS.gemini).toBe('gemini-2.5-flash');
+    expect(DEFAULT_MODELS.gemini).toBe('gemini-3.8-flash');
   });
 });
 

@@ -33,7 +33,7 @@ Superfocus's remaining edge is coaching: "your coach drafts the week around your
 ```ts
 export type Provider = 'gemini' | 'openai-compatible';
 export interface AiConfig { provider: Provider; apiKey: string; model: string; baseUrl?: string }  // baseUrl only for openai-compatible, e.g. https://api.groq.com/openai/v1 or https://openrouter.ai/api/v1
-export const DEFAULT_MODELS: Record<Provider, string> = { gemini: 'gemini-2.5-flash', 'openai-compatible': 'llama-3.3-70b-versatile' };
+export const DEFAULT_MODELS: Record<Provider, string> = { gemini: 'gemini-3.8-flash', 'openai-compatible': 'llama-3.3-70b-versatile' };
 export function loadAiConfig(): AiConfig | null; export function saveAiConfig(c: AiConfig | null): void;   // localStorage, try/catch
 export interface CoachContext { today: DateKey; season?: {...}; goals: {title, status, trajectory}[]; priorities: {title, done}[]; todayTasks: {title, done, estimateMin, blocked: boolean}[]; blocks: {title, start, end, kind}[]; lastWeek?: {focusTotal, tasksCompleted, highlightsDone, highlightsSet, habitRate, scoreMean}; openCount: number; overdueCount: number; highlight?: {text, done} }
 export function buildContext(state: AppState, today: DateKey, weekStart: DateKey): CoachContext   // titles only: never notes, never emails

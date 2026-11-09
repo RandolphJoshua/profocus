@@ -14,7 +14,7 @@ export interface AiConfig {
 }
 
 export const AI_KEY = 'profocus:ai';
-export const DEFAULT_MODELS: Record<Provider, string> = { gemini: 'gemini-2.5-flash', 'openai-compatible': 'llama-3.3-70b-versatile' };
+export const DEFAULT_MODELS: Record<Provider, string> = { gemini: 'gemini-3.8-flash', 'openai-compatible': 'llama-3.3-70b-versatile' };
 
 const GEMINI_ROOT = 'https://generativelanguage.googleapis.com/v1beta/models';
 const TIMEOUT_MS = 20_000;

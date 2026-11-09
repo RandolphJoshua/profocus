@@ -40,7 +40,8 @@ Account to use for both dashboards: the same Google account that owns the Supaba
 ### 1.4 Calendar API (optional, for a later feature)
 Only if asked to prepare Google Calendar access as well:
 1. **APIs & Services → Library** → search **Google Calendar API** → Enable.
-2. Back in **OAuth consent screen → Data access / Scopes** → Add scope `https://www.googleapis.com/auth/calendar.readonly` → Update → Save.
+2. Back in **OAuth consent screen → Data access / Scopes** → Add scope `https://www.googleapis.com/auth/calendar.events` → Update → Save.
+The `calendar.events` scope covers reading events (the import) and, if the user switches on **Settings → Account → Show my time blocks in Google Calendar**, adding time blocks as events. ProFocus only ever changes or deletes events it created itself (recognisable by their ProFocus-derived event id); every other event is read-only to it. Users who connected under the old read-only scope reconnect once from Settings.
 Nothing else changes; the same client is reused.
 
 ## Part 2 — Supabase dashboard (https://supabase.com/dashboard)

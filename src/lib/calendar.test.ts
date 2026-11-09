@@ -1,4 +1,5 @@
-import { calendarListUrl, eventsToBlocks, type GoogleEvent } from './calendar';
+import { blockToEvent, calendarListUrl, eventIdFor, eventsToBlocks, ownEvents, planWrites, type GoogleEvent, type OwnEvent } from './calendar';
+import type { TimeBlock } from './types';
 import { fromKey } from './date';
 
 const id = (e: string) => `g-${e}`;
@@ -46,3 +47,110 @@ describe('calendarListUrl', () => {
     expect(url.searchParams.get('maxResults')).toBe('250');
   });
 });
+
+const blk = (o: Partial<TimeBlock> & { id: string }): TimeBlock => ({ date: '2026-11-04', start: 540, end: 600, title: 'Write', kind: 'focus', ...o });
+const evFor = (b: TimeBlock, extra: Partial<GoogleEvent> = {}): GoogleEvent => ({
+  id: eventIdFor(b.id),
+  summary: b.title,
+  start: { dateTime: at(2026, 11, 4, 9) },
+  end: { dateTime: at(2026, 11, 4, 10) },
+  extendedProperties: { private: { profocusBlockId: b.id } },
+  ...extra,
+});
+const ownOf = (b: TimeBlock): OwnEvent => ({ blockId: b.id, date: b.date, start: b.start, end: b.end, title: b.title });
+const range = { from: '2026-11-02', to: '2026-11-08' };
+
+describe('eventIdFor', () => {
+  it('is stable and uses only Google-allowed characters with length >= 5', () => {
+    expect(eventIdFor('abc')).toBe(eventIdFor('abc'));
+    for (const id of ['', 'a', 'b-123', 'uuid-1234-ünï', 'x'.repeat(100)]) {
+      expect(eventIdFor(id)).toMatch(/^pf[0-9a-v]+$/);
+      expect(eventIdFor(id).length).toBeGreaterThanOrEqual(5);
+    }
+  });
+  it('differs for different blocks', () => {
+    const ids = ['a', 'b', 'ab', 'ba', 'abc', ''].map(eventIdFor);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+  it('matches base32hex of the utf8 bytes', () => {
+    expect(eventIdFor('foobar')).toBe('pfcpnmuoj1e8');
+  });
+});
+
+describe('ownEvents', () => {
+  it('parses events carrying our block id in local time', () => {
+    const b = blk({ id: 'b1' });
+    expect(ownEvents([evFor(b)])).toEqual([{ blockId: 'b1', date: '2026-11-04', start: 540, end: 600, title: 'Write' }]);
+  });
+  it('ignores other events and events whose id is not ours', () => {
+    const b = blk({ id: 'b1' });
+    const foreign: GoogleEvent = { id: 'zzz', summary: 'Dentist', start: { dateTime: at(2026, 11, 4, 9) }, end: { dateTime: at(2026, 11, 4, 10) } };
+    const spoofed = evFor(b, { id: 'someoneelses' });
+    expect(ownEvents([foreign, spoofed])).toEqual([]);
+  });
+  it('ignores cancelled and all-day events', () => {
+    const b = blk({ id: 'b1' });
+    expect(ownEvents([evFor(b, { status: 'cancelled' }), evFor(b, { start: { date: '2026-11-04' }, end: { date: '2026-11-05' } })])).toEqual([]);
+  });
+});
+
+describe('blockToEvent', () => {
+  it('builds an event with our id, private property and ISO local times', () => {
+    const b = blk({ id: 'b1', start: 570, end: 615, title: 'Deep work' });
+    expect(blockToEvent(b, 'Europe/Paris')).toEqual({
+      id: eventIdFor('b1'),
+      summary: 'Deep work',
+      description: 'From ProFocus',
+      start: { dateTime: at(2026, 11, 4, 9, 30), timeZone: 'Europe/Paris' },
+      end: { dateTime: at(2026, 11, 4, 10, 15), timeZone: 'Europe/Paris' },
+      extendedProperties: { private: { profocusBlockId: 'b1' } },
+    });
+  });
+});
+
+describe('planWrites', () => {
+  it('inserts blocks that have no event', () => {
+    const b = blk({ id: 'b1' });
+    expect(planWrites([b], [], range)).toEqual({ insert: [b], patch: [], remove: [] });
+  });
+  it('does nothing when nothing changed', () => {
+    const b = blk({ id: 'b1' });
+    expect(planWrites([b], [ownOf(b)], range)).toEqual({ insert: [], patch: [], remove: [] });
+  });
+  it.each([
+    ['date', { date: '2026-11-05' }],
+    ['start', { start: 550 }],
+    ['end', { end: 660 }],
+    ['title', { title: 'Renamed' }],
+  ])('patches when %s differs', (_n, change) => {
+    const b = blk({ id: 'b1' });
+    const moved = { ...b, ...change };
+    expect(planWrites([moved], [ownOf(b)], range)).toEqual({ insert: [], patch: [moved], remove: [] });
+  });
+  it('removes own events whose block is gone', () => {
+    const b = blk({ id: 'b1' });
+    expect(planWrites([], [ownOf(b)], range)).toEqual({ insert: [], patch: [], remove: ['b1'] });
+  });
+  it('ignores google-sourced blocks', () => {
+    const g = blk({ id: 'g-1', source: 'google', externalId: '1' });
+    expect(planWrites([g], [], range)).toEqual({ insert: [], patch: [], remove: [] });
+  });
+  it('ignores blocks and own events outside the range', () => {
+    const out = blk({ id: 'o1', date: '2026-12-25' });
+    expect(planWrites([out], [], range)).toEqual({ insert: [], patch: [], remove: [] });
+    expect(planWrites([], [ownOf(out)], range)).toEqual({ insert: [], patch: [], remove: [] });
+  });
+  it('moves (patches), never removes, the event of a block that moved out of range', () => {
+    const b = blk({ id: 'b1' });
+    const moved = { ...b, date: '2026-12-25' };
+    expect(planWrites([moved], [ownOf(b)], range)).toEqual({ insert: [], patch: [moved], remove: [] });
+  });
+});
+
+describe('eventsToBlocks and our own events', () => {
+  it('skips events ProFocus created', () => {
+    const b = blk({ id: 'b1' });
+    expect(eventsToBlocks([evFor(b)], id)).toEqual([]);
+  });
+});
+

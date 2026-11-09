@@ -10,7 +10,7 @@ A personal planner for doing fewer things, better. Built for one person (me), ru
 **Goals**: long-term goals with a why and a target date; progress from focus time, tasks done and weeks prioritised, plus a trajectory ("Day 8 of 127 · On track / Adjust / Off track").
 **Focus mode**: one task, an intention line, the timer, optional brown noise, nothing else; rate each session rough / ok / flow (shown as focus quality on Review).
 **Auto-plan**: "Schedule everything" in Plan my day chains your open tasks into the day's free slots; "Add all three" in Plan my week spreads the priorities over the week.
-**Google Calendar**: sign in with Google and connect the calendar from Settings → Account; events for the current week ±1 appear as read-only blocks so planning works around them.
+**Google Calendar**: sign in with Google and connect the calendar from Settings → Account; events for the current week ±1 appear as read-only blocks so planning works around them. Optionally, turn on *Show my time blocks in Google Calendar* to mirror the blocks you plan into your primary calendar (scope `calendar.events`); ProFocus only ever changes or deletes events it created itself, and turning the option off keeps what was added. If you connected before this option existed, reconnect once.
 **Habits**: weekly check-offs, streaks and a 4-week heatmap.
 **Review**: daily scores (40 highlight · 30 focus vs plan · 15 habits · 15 tasks), focus by day and project, highlights hit, and reflection prompts.
 

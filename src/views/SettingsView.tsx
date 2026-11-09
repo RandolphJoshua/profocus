@@ -47,6 +47,26 @@ function CalendarLine() {
   );
 }
 
+function CalendarWriteRow() {
+  const cal = useCalendar();
+  const { state, dispatch } = useStore();
+  if (cal.status !== 'connected') return null;
+  const on = state.settings.calendarWrite === true;
+  const time = cal.lastPushAt ? new Date(cal.lastPushAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  return (
+    <div>
+      <label className="row gap">
+        <input type="checkbox" checked={on} onChange={(e) => dispatch({ type: 'SET_SETTINGS', patch: { calendarWrite: e.target.checked } })} />
+        <span>Show my time blocks in Google Calendar</span>
+      </label>
+      <p className="hint">
+        Adds and updates events for blocks you plan here. Only events ProFocus created are ever changed. Turning this off keeps the events already added.
+        {on && time && <span className="num"> Last synced {time}</span>}
+      </p>
+    </div>
+  );
+}
+
 function AccountSection() {
   const { user, status, signInWithGoogle, sendMagicLink, signOut } = useAuth();
   const sync = useSync();
@@ -92,6 +112,7 @@ function AccountSection() {
               {sync.status === 'error' ? sync.error : sync.status === 'syncing' ? 'Syncing…' : `Synced · last saved ${lastSaved}`}
             </p>
             <CalendarLine />
+            <CalendarWriteRow />
             <div className="row gap">
               <button type="button" className="link-btn" onClick={() => void signOut()}>Sign out</button>
             </div>

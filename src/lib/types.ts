@@ -143,6 +143,8 @@ export interface Settings {
   sound: boolean;
   /** A Google Calendar has been linked (on this or another device). */
   calendarConnected?: boolean;
+  /** Mirror ProFocus time blocks into the primary Google Calendar (opt-in). */
+  calendarWrite?: boolean;
 }
 
 export interface AppState {

@@ -19,7 +19,7 @@ interface AuthValue {
 
 const AuthContext = createContext<AuthValue | null>(null);
 
-export const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
+export const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
 
 const redirectUrl = () => window.location.origin + window.location.pathname;
 

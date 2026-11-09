@@ -58,6 +58,18 @@ Your score for the day (40 highlight · 30 focus vs plan · 15 habits · 15 task
 
 **Seasons → Close season** asks what the season taught you and keeps the answer in *Past seasons*. Then start the next season with the goals that deserve the next 12 weeks.
 
+## Change the focus length
+
+When the timer is not running, a **Focus length** menu sits under the clock (15 to 90 minutes). It also appears in Focus mode, and the full timer offers the same for short and long breaks. Picking a length changes your setting, so the next sessions use it too. The menu is hidden while the timer runs.
+
+## New monday items in Tasks
+
+1. In monday, open your avatar, then Developers, then My access tokens, and copy your personal token.
+2. In **Settings → monday.com**, paste it, check the Board ID (from the board URL), then **Save** and **Sync now**.
+3. The first sync only records what is already on the board, so nothing is imported. Use **Import N open items already there** if you want those too.
+
+After that, each new item on the board becomes a task in your inbox (no date) every 10 minutes while the tab is open, and again when you return to it. Items you do not own are skipped unless you turn off *Only items where I'm an Owner*. The token stays in this browser and is never synced; **Disconnect** removes it.
+
 ## Slack status while focusing
 
 1. Open api.slack.com/apps, choose Create New App, then From scratch, and pick your workspace.

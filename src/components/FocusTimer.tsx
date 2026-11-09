@@ -1,5 +1,6 @@
 import { formatClock, formatDuration } from '../lib/date';
 import { focusMinutesOn } from '../lib/stats';
+import { LengthPicker } from './LengthPicker';
 import { useStore, useToday } from '../state/store';
 import { useTimer, type TimerMode } from '../state/timer';
 
@@ -48,6 +49,8 @@ export function FocusTimer({ compact = false }: { compact?: boolean }) {
           <span className="timer-label">{LABELS[timer.mode]}</span>
         </div>
       </div>
+
+      <LengthPicker focusOnly={compact} />
 
       {timer.mode === 'focus' && (
         compact ? (

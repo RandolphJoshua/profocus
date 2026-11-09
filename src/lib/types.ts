@@ -53,6 +53,10 @@ export interface Task {
   done: boolean;
   doneAt?: string;
   createdAt: string;
+  /** Where an imported task came from. */
+  source?: 'monday';
+  /** The external system's item id. */
+  externalId?: string;
 }
 
 export type BlockKind = 'focus' | 'meeting' | 'personal' | 'break';
@@ -147,6 +151,8 @@ export interface Settings {
   calendarWrite?: boolean;
   /** The Getting started panel on Today has been dismissed. */
   onboardingHidden?: boolean;
+  /** monday.com item ids already looked at (newest last, capped), so no device re-imports them. */
+  mondaySeen?: string[];
 }
 
 export interface AppState {

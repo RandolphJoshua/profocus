@@ -1,4 +1,4 @@
-import type { AppState, Settings } from './types';
+import type { AppState, Settings, Task } from './types';
 
 export const STORAGE_KEY = 'profocus:v1';
 export const SAVED_AT_KEY = 'profocus:savedAt';
@@ -48,6 +48,29 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
+export const MONDAY_SEEN_CAP = 2000;
+
+/** Keep only the known import fields on a task; anything else is dropped. */
+function normalizeTask(t: unknown): unknown {
+  if (!isRecord(t)) return t;
+  const { source, externalId, ...rest } = t;
+  const out: Record<string, unknown> = { ...rest };
+  if (source === 'monday' && typeof externalId === 'string' && externalId) {
+    out.source = 'monday';
+    out.externalId = externalId;
+  }
+  return out as unknown as Task;
+}
+
+function normalizeSettings(raw: unknown): Settings {
+  const { mondaySeen, ...rest } = isRecord(raw) ? (raw as Partial<Settings> & Record<string, unknown>) : ({} as Record<string, unknown>);
+  const settings: Settings = { ...DEFAULT_SETTINGS, ...(rest as Partial<Settings>) };
+  if (Array.isArray(mondaySeen)) {
+    settings.mondaySeen = mondaySeen.filter((x): x is string => typeof x === 'string').slice(-MONDAY_SEEN_CAP);
+  }
+  return settings;
+}
+
 /**
  * Accept untrusted JSON (localStorage or an imported backup) and return a
  * well-formed state, filling any missing collections with defaults.
@@ -62,14 +85,14 @@ export function normalizeState(raw: unknown): AppState {
     projects: arr(raw.projects, base.projects),
     goals: arr(raw.goals, []),
     seasons: arr(raw.seasons, []),
-    tasks: arr(raw.tasks, []),
+    tasks: arr<unknown>(raw.tasks, []).map(normalizeTask) as Task[],
     blocks: arr(raw.blocks, []),
     sessions: arr(raw.sessions, []),
     habits: arr(raw.habits, []),
     habitLog: rec(raw.habitLog),
     days: rec(raw.days),
     reviews: rec(raw.reviews),
-    settings: { ...DEFAULT_SETTINGS, ...(isRecord(raw.settings) ? (raw.settings as Partial<Settings>) : {}) },
+    settings: normalizeSettings(raw.settings),
   };
 }
 

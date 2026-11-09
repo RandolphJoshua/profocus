@@ -8,6 +8,7 @@ import { useCalendar } from '../state/calendar';
 import { useCalendarLine } from '../state/calendarStatus';
 import { useCoach } from '../state/coach';
 import { useStore } from '../state/store';
+import { MondaySection } from './MondaySection';
 import { SlackSection } from './SlackSection';
 import { useSync } from '../state/sync';
 
@@ -272,6 +273,8 @@ export function SettingsView() {
       <CoachSection />
 
       <SlackSection />
+
+      <MondaySection />
 
       <section className="setting">
         <div>

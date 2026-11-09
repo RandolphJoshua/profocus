@@ -6,6 +6,7 @@ import { PlanDay } from './components/PlanDay';
 import { PlanWeek } from './components/PlanWeek';
 import { ToastProvider, useToast } from './components/Toaster';
 import { startOfWeek } from './lib/date';
+import { useMondaySync } from './state/mondaySync';
 import { useSlackFocusSync } from './state/slackFocus';
 import { useStore, useToday } from './state/store';
 import { useSync } from './state/sync';
@@ -87,6 +88,7 @@ function AppShell() {
   const timer = useTimer();
   const sync = useSync();
   useSlackFocusSync();
+  useMondaySync();
   const [view, setView] = useState<ViewId>(viewFromHash);
   // #focus is an overlay on top of whichever view was open before it.
   const [focus, setFocus] = useState(isFocusHash);

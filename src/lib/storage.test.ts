@@ -39,3 +39,26 @@ describe('savedAt', () => {
     expect(new Date(loadSavedAt(store)!).toISOString()).toBe(loadSavedAt(store));
   });
 });
+
+describe('monday fields', () => {
+  it('keeps a valid source and externalId on a task and drops invalid ones', () => {
+    const ok = { id: 't1', title: 'A', done: false, createdAt: '', source: 'monday', externalId: '42' };
+    const bad = { id: 't2', title: 'B', done: false, createdAt: '', source: 'evil', externalId: '7' };
+    const noId = { id: 't3', title: 'C', done: false, createdAt: '', source: 'monday', externalId: 9 };
+    const { tasks } = normalizeState({ tasks: [ok, bad, noId, 'junk'] });
+    expect(tasks[0]).toEqual(ok);
+    expect(tasks[1]).toEqual({ id: 't2', title: 'B', done: false, createdAt: '' });
+    expect(tasks[2]).toEqual({ id: 't3', title: 'C', done: false, createdAt: '' });
+    expect(tasks[3]).toBe('junk');
+  });
+
+  it('keeps mondaySeen as a string array capped at the last 2000', () => {
+    expect(normalizeState({}).settings.mondaySeen).toBeUndefined();
+    expect(normalizeState({ settings: { mondaySeen: 'x' } }).settings.mondaySeen).toBeUndefined();
+    expect(normalizeState({ settings: { mondaySeen: ['1', 2, '3'] } }).settings.mondaySeen).toEqual(['1', '3']);
+    const many = Array.from({ length: 2500 }, (_, i) => String(i));
+    const seen = normalizeState({ settings: { mondaySeen: many } }).settings.mondaySeen;
+    expect(seen).toHaveLength(2000);
+    expect(seen?.[0]).toBe('500');
+  });
+});

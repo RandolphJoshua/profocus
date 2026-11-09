@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { LengthPicker } from '../components/LengthPicker';
 import { formatClock } from '../lib/date';
 import { useStore, useToday } from '../state/store';
 import { useTimer, type TimerMode } from '../state/timer';
@@ -127,6 +128,8 @@ export function FocusMode({ onExit }: { onExit: () => void }) {
             <span className="timer-label">{LABELS[timer.mode]}</span>
           </div>
         </div>
+
+        <LengthPicker />
 
         <div className="timer-controls">
           {timer.running ? (

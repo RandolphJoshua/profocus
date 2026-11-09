@@ -3,6 +3,22 @@ import {
   buildContext, complete, DEFAULT_MODELS, loadAiConfig, parseSuggestions, saveAiConfig, SYSTEM_PROMPT, type AiConfig,
 } from './ai';
 
+const sdk = vi.hoisted(() => ({ create: vi.fn(), ctor: vi.fn() }));
+vi.mock('@anthropic-ai/sdk', () => {
+  class APIError extends Error {}
+  class AuthenticationError extends APIError {}
+  class RateLimitError extends APIError {}
+  class Anthropic {
+    static APIError = APIError;
+    static AuthenticationError = AuthenticationError;
+    static RateLimitError = RateLimitError;
+    beta = { messages: { create: sdk.create } };
+    constructor(opts: unknown) { sdk.ctor(opts); }
+  }
+  return { default: Anthropic, APIError, AuthenticationError, RateLimitError };
+});
+
+const claude: AiConfig = { provider: 'anthropic', apiKey: 'KEY-A', model: 'claude-opus-5-5' };
 const gemini: AiConfig = { provider: 'gemini', apiKey: 'KEY-G', model: 'gemini-2.5-flash' };
 const compat: AiConfig = { provider: 'openai-compatible', apiKey: 'KEY-O', model: 'llama-x', baseUrl: 'https://api.groq.com/openai/v1/' };
 
@@ -63,6 +79,61 @@ describe('complete (openai-compatible)', () => {
     vi.stubGlobal('fetch', fetchMock);
     await expect(complete({ ...compat, baseUrl: undefined }, 's', 'u')).rejects.toThrow(/base URL/i);
     await expect(complete({ ...compat, baseUrl: 'http://evil.test/v1' }, 's', 'u')).rejects.toThrow(/https/i);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('complete (anthropic)', () => {
+  beforeEach(() => { sdk.create.mockReset(); sdk.ctor.mockReset(); });
+
+  it('calls the SDK with the key, browser flag and the planned params, joining text blocks', async () => {
+    sdk.create.mockResolvedValue({ stop_reason: 'end_turn', content: [{ type: 'text', text: ' Hello ' }, { type: 'tool_use' }, { type: 'text', text: 'world ' }] });
+    const out = await complete(claude, 'SYS', 'USER', { json: true });
+    expect(out).toBe('Hello world');
+    expect(sdk.ctor).toHaveBeenCalledWith({ apiKey: 'KEY-A', dangerouslyAllowBrowser: true, timeout: 20_000, maxRetries: 1 });
+    expect(sdk.create).toHaveBeenCalledWith({
+      model: 'claude-opus-5-5',
+      max_tokens: 1024,
+      system: 'SYS',
+      messages: [{ role: 'user', content: 'USER' }],
+      output_config: { effort: 'low' },
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
+    });
+    const params = sdk.create.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(params).not.toHaveProperty('thinking');
+    expect(params).not.toHaveProperty('temperature');
+  });
+
+  it('throws the explanation when the model refuses', async () => {
+    sdk.create.mockResolvedValue({ stop_reason: 'refusal', stop_details: { explanation: 'Declined for safety.' }, content: [] });
+    await expect(complete(claude, 's', 'u')).rejects.toThrow('Declined for safety.');
+    sdk.create.mockResolvedValue({ stop_reason: 'refusal', content: [] });
+    await expect(complete(claude, 's', 'u')).rejects.toThrow('The model declined this request.');
+  });
+
+  it('maps SDK errors to short messages', async () => {
+    const sdkModule = await import('@anthropic-ai/sdk');
+    // The mock classes take a message only; the real constructors need more arguments.
+    const make = (C: unknown, msg: string) => new (C as new (m: string) => Error)(msg);
+    sdk.create.mockRejectedValueOnce(make(sdkModule.AuthenticationError, '401 raw'));
+    await expect(complete(claude, 's', 'u')).rejects.toThrow('Invalid API key');
+    sdk.create.mockRejectedValueOnce(make(sdkModule.RateLimitError, '429 raw'));
+    await expect(complete(claude, 's', 'u')).rejects.toThrow(/Rate limited/);
+    sdk.create.mockRejectedValueOnce(make(sdkModule.APIError, 'x'.repeat(500)));
+    await expect(complete(claude, 's', 'u')).rejects.toThrow(new RegExp(`^x{200}$`));
+  });
+
+  it('throws on an empty answer', async () => {
+    sdk.create.mockResolvedValue({ stop_reason: 'end_turn', content: [] });
+    await expect(complete(claude, 's', 'u')).rejects.toThrow(/empty/i);
+  });
+
+  it('never calls fetch', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    sdk.create.mockResolvedValue({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'ok' }] });
+    await complete(claude, 's', 'u');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
@@ -129,6 +200,11 @@ describe('config storage', () => {
   });
   it('has default models', () => {
     expect(DEFAULT_MODELS.gemini).toBe('gemini-3.8-flash');
+    expect(DEFAULT_MODELS.anthropic).toBe('claude-opus-5-5');
+  });
+  it('round-trips an anthropic config', () => {
+    saveAiConfig(claude);
+    expect(loadAiConfig()).toEqual(claude);
   });
 });
 

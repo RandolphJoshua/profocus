@@ -3,7 +3,7 @@ import { currentSeason, goalTrajectory, seasonProgress, weekScores, weekStats } 
 import type { AppState, BlockKind, DateKey } from './types';
 
 /** Bring-your-own-key AI coach. The key lives only in localStorage under AI_KEY, never in AppState. */
-export type Provider = 'gemini' | 'openai-compatible';
+export type Provider = 'anthropic' | 'gemini' | 'openai-compatible';
 
 export interface AiConfig {
   provider: Provider;
@@ -14,7 +14,7 @@ export interface AiConfig {
 }
 
 export const AI_KEY = 'profocus:ai';
-export const DEFAULT_MODELS: Record<Provider, string> = { gemini: 'gemini-3.8-flash', 'openai-compatible': 'llama-3.3-70b-versatile' };
+export const DEFAULT_MODELS: Record<Provider, string> = { anthropic: 'claude-opus-5-5', gemini: 'gemini-3.8-flash', 'openai-compatible': 'llama-3.3-70b-versatile' };
 
 const GEMINI_ROOT = 'https://generativelanguage.googleapis.com/v1beta/models';
 const TIMEOUT_MS = 20_000;
@@ -28,7 +28,7 @@ export function loadAiConfig(): AiConfig | null {
     const v: unknown = JSON.parse(raw);
     if (typeof v !== 'object' || v === null) return null;
     const o = v as Record<string, unknown>;
-    if ((o.provider !== 'gemini' && o.provider !== 'openai-compatible') || typeof o.apiKey !== 'string' || !o.apiKey || typeof o.model !== 'string' || !o.model) return null;
+    if ((o.provider !== 'anthropic' && o.provider !== 'gemini' && o.provider !== 'openai-compatible') || typeof o.apiKey !== 'string' || !o.apiKey || typeof o.model !== 'string' || !o.model) return null;
     return { provider: o.provider, apiKey: o.apiKey, model: o.model, ...(typeof o.baseUrl === 'string' && o.baseUrl ? { baseUrl: o.baseUrl } : {}) };
   } catch {
     return null;
@@ -142,7 +142,34 @@ function readText(cfg: AiConfig, data: unknown): string | undefined {
   return typeof t === 'string' && t.trim() ? t : undefined;
 }
 
+/** Official SDK, loaded on demand so other providers never download it. JSON mode needs no extra param: the system prompt asks for JSON and parseSuggestions is tolerant. */
+async function completeAnthropic(cfg: AiConfig, system: string, user: string): Promise<string> {
+  const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  const client = new Anthropic({ apiKey: cfg.apiKey, dangerouslyAllowBrowser: true, timeout: TIMEOUT_MS, maxRetries: 1 });
+  try {
+    const res = await client.beta.messages.create({
+      model: cfg.model,
+      max_tokens: 1024, // notes and a 3-item JSON list are deliberately short
+      system,
+      messages: [{ role: 'user', content: user }],
+      output_config: { effort: 'low' }, // Opus 5.5 defaults to medium; low is right for a two-sentence note
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default', // if a safety classifier declines, the API re-runs on a fallback model in the same call
+    });
+    if (res.stop_reason === 'refusal') throw new Error(res.stop_details?.explanation ?? 'The model declined this request.');
+    const text = res.content.filter((b): b is Extract<typeof b, { type: 'text' }> => b.type === 'text').map((b) => b.text).join('').trim();
+    if (!text) throw new Error('The model returned an empty answer.');
+    return text;
+  } catch (e) {
+    if (e instanceof Anthropic.AuthenticationError) throw new Error('Invalid API key');
+    if (e instanceof Anthropic.RateLimitError) throw new Error('Rate limited — try again in a minute');
+    if (e instanceof Anthropic.APIError) throw new Error(clip(e.message));
+    throw e;
+  }
+}
+
 export async function complete(cfg: AiConfig, system: string, user: string, opts: { json?: boolean } = {}): Promise<string> {
+  if (cfg.provider === 'anthropic') return completeAnthropic(cfg, system, user);
   const { url, headers } = endpoint(cfg);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);

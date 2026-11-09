@@ -105,9 +105,9 @@ function AccountSection() {
 function CoachSection() {
   const coach = useCoach();
   const saved = coach.config;
-  const [provider, setProvider] = useState<Provider>(saved?.provider ?? 'gemini');
+  const [provider, setProvider] = useState<Provider>(saved?.provider ?? 'anthropic');
   const [apiKey, setApiKey] = useState(saved?.apiKey ?? '');
-  const [model, setModel] = useState(saved?.model ?? DEFAULT_MODELS[saved?.provider ?? 'gemini']);
+  const [model, setModel] = useState(saved?.model ?? DEFAULT_MODELS[saved?.provider ?? 'anthropic']);
   const [baseUrl, setBaseUrl] = useState(saved?.baseUrl ?? '');
   const [note, setNote] = useState('');
   const [failed, setFailed] = useState(false);
@@ -136,6 +136,7 @@ function CoachSection() {
                 setProvider(next);
               }}
             >
+              <option value="anthropic">Anthropic (Claude)</option>
               <option value="gemini">Gemini</option>
               <option value="openai-compatible">OpenAI-compatible</option>
             </select>
@@ -175,7 +176,7 @@ function CoachSection() {
           {note && <p role="status" className={failed ? 'sync-error' : 'muted'}>{note}</p>}
           {failed && coach.error && <p role="alert" className="sync-error">{coach.error}</p>}
         </form>
-        <p className="hint">Free options: Google AI Studio (Gemini) · Groq · OpenRouter free models. The coach sees your goal, priority and task titles plus this week’s numbers — never your notes.</p>
+        <p className="hint">Anthropic Console (Claude) · Google AI Studio (Gemini) · Groq · OpenRouter. The coach sees your goal, priority and task titles plus this week’s numbers — never your notes.</p>
       </div>
     </section>
   );

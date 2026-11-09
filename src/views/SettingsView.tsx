@@ -5,6 +5,7 @@ import type { Settings, Theme } from '../lib/types';
 import { useAuth } from '../state/auth';
 import { DEFAULT_MODELS, type AiConfig, type Provider } from '../lib/ai';
 import { useCalendar } from '../state/calendar';
+import { useCalendarLine } from '../state/calendarStatus';
 import { useCoach } from '../state/coach';
 import { useStore } from '../state/store';
 import { useSync } from '../state/sync';
@@ -12,35 +13,21 @@ import { useSync } from '../state/sync';
 function CalendarLine() {
   const cal = useCalendar();
   const { state } = useStore();
+  const line = useCalendarLine();
   const linked = state.settings.calendarConnected === true;
-  const time = cal.lastImportAt ? new Date(cal.lastImportAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
   return (
     <div className="row gap calendar-line">
-      <span className="muted">Google Calendar:</span>
-      {cal.status === 'off' && (
+      {line ? (
         <>
+          <span role="status" className={`num ${line.error ? 'sync-error' : 'muted'}`}>{line.text}</span>
+          {line.actionLabel && <button type="button" className="link-btn" onClick={line.run}>{line.actionLabel}</button>}
+          {cal.status === 'connected' && <button type="button" className="link-btn" onClick={cal.disconnect}>Disconnect</button>}
+        </>
+      ) : (
+        <>
+          <span className="muted">Google Calendar:</span>
           <span className="muted">{linked ? 'Disconnected' : 'Not connected'}</span>
           <button type="button" className="link-btn" onClick={cal.connect}>{linked ? 'Reconnect' : 'Connect'}</button>
-        </>
-      )}
-      {cal.status === 'loading' && <span className="muted">Importing…</span>}
-      {cal.status === 'connected' && (
-        <>
-          <span className="muted num">Connected · imported {time}</span>
-          <button type="button" className="link-btn" onClick={() => void cal.refresh(undefined, { force: true })}>Refresh</button>
-          <button type="button" className="link-btn" onClick={cal.disconnect}>Disconnect</button>
-        </>
-      )}
-      {cal.status === 'expired' && (
-        <>
-          <span className="muted">Expired</span>
-          <button type="button" className="link-btn" onClick={cal.connect}>Reconnect</button>
-        </>
-      )}
-      {cal.status === 'error' && (
-        <>
-          <span role="status" className="sync-error">{cal.error}</span>
-          <button type="button" className="link-btn" onClick={cal.connect}>Reconnect</button>
         </>
       )}
     </div>
@@ -63,6 +50,7 @@ function CalendarWriteRow() {
         Adds and updates events for blocks you plan here. Only events ProFocus created are ever changed. Turning this off keeps the events already added.
         {on && time && <span className="num"> Last synced {time}</span>}
       </p>
+      <p className="hint">Only blocks on the calendar grid sync. Drag a task onto a day, or give it a time like @3pm.</p>
     </div>
   );
 }

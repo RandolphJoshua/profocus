@@ -5,7 +5,7 @@ import { BlockEditor, newDraft, type BlockDraft } from '../components/BlockEdito
 import { DayColumn, TimeGutter } from '../components/DayColumn';
 import { addDays, formatDay, formatDuration, shortWeekday, startOfWeek, weekDays } from '../lib/date';
 import { focusMinutesOn } from '../lib/stats';
-import { useCalendar } from '../state/calendar';
+import { useCalendarLine } from '../state/calendarStatus';
 import { useStore, useToday } from '../state/store';
 import { byPriority } from './TodayView';
 
@@ -13,7 +13,7 @@ const HOUR = 48;
 
 export function WeekView() {
   const { state } = useStore();
-  const calendar = useCalendar();
+  const calendarLine = useCalendarLine();
   const today = useToday();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today, state.settings.weekStartsOn));
   const [draft, setDraft] = useState<BlockDraft | null>(null);
@@ -36,13 +36,19 @@ export function WeekView() {
           <p className="sub num">{formatDay(weekStart, { month: 'long', day: 'numeric' })} – {formatDay(end, { month: weekStart.slice(5, 7) === end.slice(5, 7) ? undefined : 'long', day: 'numeric' })} · {formatDuration(weekFocus)} focused</p>
         </div>
         <span className="spacer" />
-        {calendar.status === 'connected' && calendar.lastImportAt && (
-          <span className="calendar-note num">Calendar imported {new Date(calendar.lastImportAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-        )}
-        <div className="row gap" role="group" aria-label="Week navigation">
-          <button type="button" className="btn" onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label="Previous week">←</button>
-          <button type="button" className="btn" onClick={() => setWeekStart(startOfWeek(today, state.settings.weekStartsOn))}>This week</button>
-          <button type="button" className="btn" onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Next week">→</button>
+        <div className="stack week-head-tools">
+          <div className="row gap" role="group" aria-label="Week navigation">
+            <button type="button" className="btn" onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label="Previous week">←</button>
+            <button type="button" className="btn" onClick={() => setWeekStart(startOfWeek(today, state.settings.weekStartsOn))}>This week</button>
+            <button type="button" className="btn" onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Next week">→</button>
+          </div>
+          {calendarLine && (
+            <div className="row gap calendar-line">
+              <span className="spacer" />
+              <span role="status" className={`calendar-note num ${calendarLine.error ? 'sync-error' : ''}`}>{calendarLine.text}</span>
+              {calendarLine.actionLabel && <button type="button" className="link-btn" onClick={calendarLine.run}>{calendarLine.actionLabel}</button>}
+            </div>
+          )}
         </div>
         <button type="button" className="btn primary" onClick={() => setPlanning(true)}>
           {state.reviews[weekStart]?.plannedAt ? 'Re-plan' : 'Plan my week'}

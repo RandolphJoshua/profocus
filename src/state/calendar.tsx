@@ -14,8 +14,12 @@ export interface CalendarInfo {
   lastPushAt?: string;
   error?: string;
   connect: () => void;
-  refresh: (range?: { from: DateKey; to: DateKey }, opts?: { force?: boolean }) => Promise<void>;
+  refresh: (range?: { from: DateKey; to: DateKey }, opts?: { force?: boolean; renew?: boolean }) => Promise<void>;
   disconnect: () => void;
+  /** Renew the Google token, import, then mirror blocks. */
+  syncNow: () => Promise<void>;
+  /** Local blocks in the window not yet mirrored to Google (only while mirroring is on). */
+  pending: number;
 }
 
 const STALE_MS = 15 * 60_000;
@@ -29,17 +33,53 @@ const RECONNECT_HINT = 'Reconnect Google Calendar to allow ProFocus to add event
 const eventUrl = (blockId: string) => `${EVENTS_URL}/${eventIdFor(blockId)}`;
 type Outcome = 'ok' | 'expired' | 'reconnect' | { error: string };
 
-const inert: CalendarInfo = { status: 'off', connect: () => undefined, refresh: async () => undefined, disconnect: () => undefined };
+/** Set just before the Calendar sign-in redirect so the page that comes back knows the user asked to connect. */
+const CONNECT_FLAG = 'profocus:gconnect';
+const connectFlag = {
+  set() {
+    try {
+      sessionStorage.setItem(CONNECT_FLAG, '1');
+    } catch {
+      // Without it the import still runs once the calendar is linked.
+    }
+  },
+  get() {
+    try {
+      return sessionStorage.getItem(CONNECT_FLAG) === '1';
+    } catch {
+      return false;
+    }
+  },
+  clear() {
+    try {
+      sessionStorage.removeItem(CONNECT_FLAG);
+    } catch {
+      // Nothing to clear.
+    }
+  },
+};
+
+const inert: CalendarInfo = {
+  status: 'off',
+  connect: () => undefined,
+  refresh: async () => undefined,
+  disconnect: () => undefined,
+  syncNow: async () => undefined,
+  pending: 0,
+};
 const CalendarContext = createContext<CalendarInfo>(inert);
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
-  const { status: authStatus, providerToken, signInWithGoogle } = useAuth();
+  const { status: authStatus, providerToken, ensureGoogleToken, signInWithGoogle } = useAuth();
   const { state, dispatch } = useStore();
   const sync = useSync();
   const linked = state.settings.calendarConnected === true;
   const [info, setInfo] = useState<{ status: CalendarStatus; lastImportAt?: string; lastPushAt?: string; error?: string }>({ status: 'off' });
-  const tokenRef = useRef(providerToken);
-  tokenRef.current = providerToken;
+  const authStatusRef = useRef(authStatus);
+  authStatusRef.current = authStatus;
+  const ensureRef = useRef(ensureGoogleToken);
+  ensureRef.current = ensureGoogleToken;
+  const [resolved, setResolved] = useState(false);
   const weekStartsOn = state.settings.weekStartsOn;
   const infoRef = useRef(info);
   infoRef.current = info;
@@ -57,9 +97,24 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const pushAgain = useRef(false);
   const reconcileRef = useRef<() => Promise<void>>(async () => undefined);
 
-  const refresh = useCallback(async (range?: { from: DateKey; to: DateKey }, opts?: { force?: boolean }) => {
-    const token = tokenRef.current;
-    if (!token || inFlight.current) return;
+  /** One Google request with a fresh token; a 401 renews the token once and retries. null = no usable token. */
+  const authed = useCallback(async (url: string, init: { method?: string; body?: string; json?: boolean } = {}, renew = false): Promise<Response | null> => {
+    const send = async (token: string) =>
+      fetch(url, {
+        method: init.method,
+        headers: { Authorization: `Bearer ${token}`, ...(init.json ? { 'Content-Type': 'application/json' } : {}) },
+        body: init.body,
+      });
+    const first = await ensureRef.current({ force: renew });
+    if (!first) return null;
+    const res = await send(first);
+    if (res.status !== 401) return res;
+    const second = await ensureRef.current({ force: true });
+    return second ? send(second) : null;
+  }, []);
+
+  const refresh = useCallback(async (range?: { from: DateKey; to: DateKey }, opts?: { force?: boolean; renew?: boolean }) => {
+    if (authStatusRef.current !== 'signed-in' || inFlight.current) return;
     // Disconnected (possibly on another device): only an explicit connect/Refresh may import.
     if (!opts?.force && !linkedRef.current && state.settings.calendarConnected === false) return;
     inFlight.current = true;
@@ -67,7 +122,11 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     const { from, to } = range ?? { from: addDays(week, -7), to: addDays(week, 13) };
     setInfo((p) => ({ ...p, status: 'loading', error: undefined }));
     try {
-      const res = await fetch(calendarListUrl(from, to), { headers: { Authorization: `Bearer ${token}` } });
+      const res = await authed(calendarListUrl(from, to), {}, opts?.renew === true);
+      if (!res) {
+        setInfo((p) => ({ ...p, status: 'expired' }));
+        return;
+      }
       if (res.status === 401 || res.status === 403) {
         const body = res.status === 403 ? await res.text().catch(() => '') : '';
         if (/accessNotConfigured|insufficient/i.test(body)) setInfo((p) => ({ ...p, status: 'error', error: API_HINT }));
@@ -98,12 +157,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       pushAgain.current = false;
       void reconcileRef.current();
     }
-  }, [dispatch, linked, weekStartsOn, state.settings.calendarConnected]);
+  }, [authed, dispatch, linked, weekStartsOn, state.settings.calendarConnected]);
 
   /** Mirror ProFocus blocks into Google Calendar. Only ever touches ids from eventIdFor; never throws. */
   const reconcile = useCallback(async () => {
     const win = windowRef.current;
-    if (!calendarWriteRef.current || !tokenRef.current || infoRef.current.status !== 'connected' || !ownRef.current || !win) return;
+    if (!calendarWriteRef.current || infoRef.current.status !== 'connected' || !ownRef.current || !win) return;
     if (pushing.current) {
       pushAgain.current = true;
       return;
@@ -112,15 +171,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     try {
       const plan = planWrites(blocksRef.current, ownRef.current, win);
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const call = async (method: string, url: string, body?: object): Promise<Response> => {
-        const token = tokenRef.current;
-        if (!token) throw new Error('Signed out.');
-        return fetch(url, {
-          method,
-          headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
-          body: body ? JSON.stringify(body) : undefined,
-        });
-      };
+      // No usable token reads as a 401, which judge() turns into "reconnect needed".
+      const call = async (method: string, url: string, body?: object): Promise<Response> =>
+        (await authed(url, { method, body: body ? JSON.stringify(body) : undefined, json: Boolean(body) })) ?? new Response(null, { status: 401 });
       const judge = async (res: Response): Promise<Outcome> => {
         if (res.ok) return 'ok';
         if (res.status === 401) return 'expired';
@@ -166,7 +219,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         void reconcileRef.current();
       }
     }
-  }, []);
+  }, [authed]);
   reconcileRef.current = reconcile;
 
   // Blocks changed (or the toggle/connection changed): mirror them a few seconds later.
@@ -182,24 +235,43 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
   // A fresh Google token (after a Calendar sign-in) triggers an import, once the initial cloud pull is done
   // (or there is no sync), and again after a later pull replaces state. Only a new token forces past a disconnect.
+  // Runs on app load too: the token is kept across reloads and renewed on demand. Only a calendar already linked
+  // (here or on another device), or a Connect the user just made, may import.
   const importedKey = useRef('');
-  const importedToken = useRef<string | null>(null);
   useEffect(() => {
     if (!providerToken || (sync.status !== 'synced' && sync.status !== 'off')) return;
-    const key = `${providerToken}|${sync.lastSyncAt ?? ''}`;
+    const asked = connectFlag.get();
+    if (!linked && !asked) return;
+    const key = `${providerToken}|${sync.lastSyncAt ?? ''}|${linked}`;
     if (importedKey.current === key) return;
     importedKey.current = key;
-    const force = importedToken.current !== providerToken;
-    importedToken.current = providerToken;
-    void refresh(undefined, { force });
-    // refresh identity changes with settings; only a new token or pull should re-import.
+    connectFlag.clear();
+    void refresh(undefined, { force: asked });
+    // refresh identity changes with settings; only a new token, pull or link should re-import.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [providerToken, sync.status, sync.lastSyncAt]);
+  }, [providerToken, sync.status, sync.lastSyncAt, linked]);
+
+  // Whether the stored token has been tried yet: until then a linked calendar reads "loading", not "reconnect".
+  useEffect(() => {
+    if (authStatus !== 'signed-in') {
+      setResolved(false);
+      return;
+    }
+    if (providerToken) {
+      setResolved(true);
+      return;
+    }
+    let live = true;
+    void ensureGoogleToken().finally(() => live && setResolved(true));
+    return () => {
+      live = false;
+    };
+  }, [authStatus, providerToken, ensureGoogleToken]);
 
   // Signed out: drop stale info. A disconnect pulled from another device resets it too.
   useEffect(() => {
-    if (!providerToken) setInfo((i) => (i.status === 'off' ? i : { status: 'off' }));
-  }, [providerToken]);
+    if (authStatus === 'signed-out') setInfo((i) => (i.status === 'off' ? i : { status: 'off' }));
+  }, [authStatus]);
   const wasLinked = useRef(linked);
   useEffect(() => {
     if (wasLinked.current && !linked) setInfo((i) => (i.status === 'off' ? i : { status: 'off' }));
@@ -218,6 +290,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const connect = useCallback(() => {
+    connectFlag.set();
     void signInWithGoogle({ calendar: true }).then((err) => {
       if (err) setInfo((p) => ({ ...p, status: 'error', error: err }));
     });
@@ -235,12 +308,25 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     setInfo({ status: 'off' });
   }, [dispatch]);
 
-  // Linked on another device but no token here: the user must reconnect.
-  const status: CalendarStatus =
-    authStatus !== 'signed-in' ? 'off' : info.status === 'off' && linked && !providerToken ? 'expired' : info.status;
+  const syncNow = useCallback(() => refresh(undefined, { force: true, renew: true }), [refresh]);
+
+  // Linked but no usable token (other device, or renewal failed): the user must reconnect.
+  const lapsed = linked && !providerToken && (info.status === 'off' || info.status === 'connected');
+  const status: CalendarStatus = authStatus !== 'signed-in' ? 'off' : lapsed ? (resolved ? 'expired' : 'loading') : info.status;
+
+  const pending = useMemo(() => {
+    const own = ownRef.current;
+    const win = windowRef.current;
+    if (!calendarWrite || !own || !win) return 0;
+    const plan = planWrites(state.blocks, own, win);
+    return plan.insert.length + plan.patch.length + plan.remove.length;
+    // ownRef/windowRef change together with lastImportAt/lastPushAt.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calendarWrite, state.blocks, info.lastImportAt, info.lastPushAt]);
+
   const value = useMemo(
-    () => ({ status, lastImportAt: info.lastImportAt, lastPushAt: info.lastPushAt, error: info.error, connect, refresh, disconnect }),
-    [status, info.lastImportAt, info.lastPushAt, info.error, connect, refresh, disconnect],
+    () => ({ status, lastImportAt: info.lastImportAt, lastPushAt: info.lastPushAt, error: info.error, connect, refresh, disconnect, syncNow, pending }),
+    [status, info.lastImportAt, info.lastPushAt, info.error, connect, refresh, disconnect, syncNow, pending],
   );
   return <CalendarContext.Provider value={value}>{children}</CalendarContext.Provider>;
 }

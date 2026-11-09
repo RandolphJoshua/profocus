@@ -44,6 +44,14 @@ Only if asked to prepare Google Calendar access as well:
 The `calendar.events` scope covers reading events (the import) and, if the user switches on **Settings → Account → Show my time blocks in Google Calendar**, adding time blocks as events. ProFocus only ever changes or deletes events it created itself (recognisable by their ProFocus-derived event id); every other event is read-only to it. Users who connected under the old read-only scope reconnect once from Settings.
 Nothing else changes; the same client is reused.
 
+### 1.5 Keep calendar sync alive (optional, recommended)
+Google access tokens expire after about an hour and Supabase does not renew them. ProFocus renews them through a small Vercel function (`api/google-token.ts`) that needs the same OAuth client:
+1. In Vercel → Project → **Settings → Environment Variables**, add **GOOGLE_CLIENT_ID** and **GOOGLE_CLIENT_SECRET** (the Client ID and Client secret from step 1.3, the same ones pasted into Supabase) for **Production** and **Preview**.
+2. Redeploy. The function also reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, which are already set for the app.
+3. Reconnect Google Calendar once from Settings → Account so Google issues a refresh token.
+
+Without these variables sync still works, but only for about an hour after each Reconnect; the Week header then reads "reconnect needed". The secret is only used server-side and is never sent to the browser.
+
 ## Part 2 — Supabase dashboard (https://supabase.com/dashboard)
 
 Open organization **profocus** → project **profocus**.

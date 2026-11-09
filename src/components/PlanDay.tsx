@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal } from './Modal';
 import { formatMinutes, minutesNow } from '../lib/date';
+import { blocksForDay } from '../lib/routines';
 import { planDay } from '../lib/stats';
 import { uid } from '../lib/storage';
 import type { DateKey, Task } from '../lib/types';
@@ -45,7 +46,7 @@ export function PlanDay({ onClose }: { onClose: () => void }) {
   };
 
   const schedule = (t: Task) => {
-    const slot = nextFreeSlot(state.blocks, today, minutesNow(), t.estimateMin ?? 30, dayStartHour * 60, dayEndHour * 60);
+    const slot = nextFreeSlot(blocksForDay(state, today), today, minutesNow(), t.estimateMin ?? 30, dayStartHour * 60, dayEndHour * 60);
     if (!slot) {
       setFull((f) => ({ ...f, [t.id]: true }));
       return;
@@ -58,7 +59,7 @@ export function PlanDay({ onClose }: { onClose: () => void }) {
 
   const unscheduled = todays.filter((t) => !state.blocks.some((b) => b.date === today && b.taskId === t.id));
   const scheduleAll = () => {
-    const placed = planDay(state.blocks, unscheduled, today, minutesNow(), dayStartHour * 60, dayEndHour * 60);
+    const placed = planDay(blocksForDay(state, today), unscheduled, today, minutesNow(), dayStartHour * 60, dayEndHour * 60);
     for (const { taskId, start, end } of placed) {
       const t = unscheduled.find((x) => x.id === taskId);
       if (!t) continue;

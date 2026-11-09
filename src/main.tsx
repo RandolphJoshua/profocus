@@ -1,4 +1,5 @@
 import './features.css';
+import './routines.css';
 import './coach.css';
 import './aiPlan.css';
 import './motion.css';

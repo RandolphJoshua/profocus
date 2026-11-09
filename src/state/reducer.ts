@@ -1,7 +1,8 @@
 import type { ParsedTask } from '../lib/parse';
+import { SKIPS_CAP, skipKey } from '../lib/routines';
 import { nextColor, uid } from '../lib/storage';
 import type {
-  AppState, DateKey, Goal, DayPlan, FocusSession, Habit, ID, Project, Season, Settings, Task, TimeBlock, WeekPriority, WeeklyReview,
+  AppState, DateKey, Goal, DayPlan, FocusSession, Habit, ID, Project, Routine, Season, Settings, Task, TimeBlock, WeekPriority, WeeklyReview,
 } from '../lib/types';
 
 export type Action =
@@ -24,6 +25,11 @@ export type Action =
   | { type: 'ADD_BLOCK'; block: TimeBlock }
   | { type: 'UPDATE_BLOCK'; id: ID; patch: Partial<TimeBlock> }
   | { type: 'DELETE_BLOCK'; id: ID }
+  | { type: 'ADD_ROUTINE'; routine: Routine }
+  | { type: 'UPDATE_ROUTINE'; id: ID; patch: Partial<Routine> }
+  | { type: 'DELETE_ROUTINE'; id: ID }
+  | { type: 'SKIP_ROUTINE'; id: ID; date: DateKey }
+  | { type: 'UNSKIP_ROUTINE'; id: ID; date: DateKey }
   | { type: 'SET_EXTERNAL_BLOCKS'; source: 'google'; range: { from: DateKey; to: DateKey }; blocks: TimeBlock[] }
   | { type: 'LOG_SESSION'; session: FocusSession }
   | { type: 'ADD_HABIT'; habit: Habit }
@@ -121,6 +127,23 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, blocks: patchById(state.blocks, action.id, action.patch) };
     case 'DELETE_BLOCK':
       return { ...state, blocks: state.blocks.filter((b) => b.id !== action.id) };
+    case 'ADD_ROUTINE':
+      return { ...state, routines: [...state.routines, action.routine] };
+    case 'UPDATE_ROUTINE':
+      return { ...state, routines: patchById(state.routines, action.id, action.patch) };
+    case 'DELETE_ROUTINE':
+      return {
+        ...state,
+        routines: state.routines.filter((r) => r.id !== action.id),
+        routineSkips: state.routineSkips.filter((k) => !k.startsWith(`${action.id}|`)),
+      };
+    case 'SKIP_ROUTINE': {
+      const key = skipKey(action.id, action.date);
+      if (state.routineSkips.includes(key)) return state;
+      return { ...state, routineSkips: [...state.routineSkips, key].slice(-SKIPS_CAP) };
+    }
+    case 'UNSKIP_ROUTINE':
+      return { ...state, routineSkips: state.routineSkips.filter((k) => k !== skipKey(action.id, action.date)) };
     case 'SET_EXTERNAL_BLOCKS': {
       const incoming = new Set(action.blocks.map((b) => b.externalId));
       const kept = state.blocks.filter(
@@ -246,6 +269,9 @@ export function mergeState(state: AppState, incoming: AppState): AppState {
     const seen = new Set(mine.map((x) => x.id));
     return [...mine, ...theirs.filter((x) => !seen.has(x.id))];
   };
+  const addedRoutines = add(state.routines, incoming.routines);
+  const known = new Set(state.routines.map((r) => r.id));
+  const newIds = new Set(addedRoutines.map((r) => r.id).filter((id) => !known.has(id)));
   return {
     ...state,
     projects: add(state.projects, incoming.projects),
@@ -253,6 +279,8 @@ export function mergeState(state: AppState, incoming: AppState): AppState {
     seasons: add(state.seasons, incoming.seasons),
     tasks: add(state.tasks, incoming.tasks),
     blocks: add(state.blocks, incoming.blocks),
+    routines: addedRoutines,
+    routineSkips: [...state.routineSkips, ...incoming.routineSkips.filter((k) => newIds.has(k.split('|')[0] ?? '') && !state.routineSkips.includes(k))].slice(-SKIPS_CAP),
     habits: add(state.habits, incoming.habits),
   };
 }

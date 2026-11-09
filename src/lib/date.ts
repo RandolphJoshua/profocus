@@ -90,3 +90,14 @@ export function formatClock(totalSeconds: number): string {
   const s = Math.max(0, Math.round(totalSeconds));
   return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
 }
+
+/** Minutes since midnight -> "HH:MM" (the value of an `<input type="time">`). */
+export function toTimeInput(min: number): string {
+  return `${pad(Math.floor(min / 60))}:${pad(min % 60)}`;
+}
+
+/** "HH:MM" -> minutes since midnight. */
+export function fromTimeInput(value: string): number {
+  const [h, m] = value.split(':').map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+}

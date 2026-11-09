@@ -10,6 +10,7 @@ import { Roll } from '../components/Roll';
 import { COLLAPSE_DELAY_MS, COLLAPSE_MS, TaskItem } from '../components/TaskItem';
 import { WeekPriorities } from '../components/WeekPriorities';
 import { addDays, formatDay, formatDuration, startOfWeek } from '../lib/date';
+import { blocksForDay } from '../lib/routines';
 import { currentSeason, dayScore, focusMinutesOn, habitStreak, plannedStreak, seasonProgress } from '../lib/stats';
 import type { DayPlan, Task } from '../lib/types';
 import { useAiPlan } from '../state/aiPlan';
@@ -66,7 +67,7 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
   const overdue = state.tasks.filter((t) => !t.done && t.date && t.date < today);
   const plannedMin = open.reduce((n, t) => n + (t.estimateMin ?? 0), 0);
   const focusMin = focusMinutesOn(state.sessions, today);
-  const focusBlocks = state.blocks.filter((b) => b.date === today && b.kind === 'focus');
+  const focusBlocks = blocksForDay(state, today).filter((b) => b.kind === 'focus');
   const blockedMin = focusBlocks.reduce((n, b) => n + (b.end - b.start), 0);
   const habits = state.habits.filter((h) => !h.archived);
   const habitsDone = habits.filter((h) => state.habitLog[today]?.includes(h.id)).length;

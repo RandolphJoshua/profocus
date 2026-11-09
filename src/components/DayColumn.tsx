@@ -1,5 +1,7 @@
 import { Fragment, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { formatMinutes, minutesNow } from '../lib/date';
+import { layoutLanes } from '../lib/overlap';
+import { blocksForDay } from '../lib/routines';
 import type { DateKey, ID, TimeBlock } from '../lib/types';
 import { useNow, useStore } from '../state/store';
 
@@ -23,6 +25,14 @@ type Drag =
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const snap = (m: number) => Math.round(m / SNAP) * SNAP;
 
+const BLOCK_INSET = 10; // px: 4 left + 6 right, matches .block
+/** Position for column `col` of `cols` when blocks share a day column. */
+const sideBySide = (col: number, cols: number): CSSProperties => ({
+  left: `calc(4px + (100% - ${BLOCK_INSET}px) * ${col} / ${cols})`,
+  right: 'auto',
+  width: `calc((100% - ${BLOCK_INSET}px) / ${cols} - 2px)`,
+});
+
 /** Interactive timeline for a single day: drag to create, drag blocks to move (across days), drag the bottom edge to resize, drop tasks to schedule. */
 export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: DayColumnProps) {
   const { state, dispatch } = useStore();
@@ -36,7 +46,8 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
   const [flashId, setFlashId] = useState<ID | null>(null);
   const now = useNow(60_000);
 
-  const blocks = state.blocks.filter((b) => b.date === date).sort((a, b) => a.start - b.start);
+  const blocks = blocksForDay(state, date);
+  const lanes = layoutLanes(blocks);
   const pxPerMin = hourHeight / 60;
 
   const minAt = (clientY: number, el: HTMLElement | null = colRef.current) => {
@@ -150,14 +161,18 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
         const h = Math.max((Math.min(b.end, dayEnd) - Math.max(b.start, dayStart)) * pxPerMin, 14);
         const short = b.end - b.start <= 30;
         const external = b.source === 'google';
+        const routine = !!b.routineId;
+        const fixed = external || routine;
+        const lane = lanes.get(b.id);
+        const side = lane && lane.cols > 1 ? sideBySide(lane.col, lane.cols) : undefined;
         return (
           <Fragment key={b.id}>
           {lifted === b.id && <div className="block ghost move-slot" style={{ top, height: h }} aria-hidden />}
           <div
-            className={`block kind-${b.kind} ${task?.done ? 'is-done' : ''} ${short ? 'is-short' : ''} ${external ? 'is-external' : ''} ${lifted === b.id ? 'is-lifted' : ''} ${flashId === b.id ? 'is-flash' : ''}`}
-            style={{ top, height: h, '--c': project?.color } as CSSProperties}
-            onPointerDown={external ? (e) => e.stopPropagation() : (e) => startDrag(e, { mode: 'move', id: b.id, grabOffset: minAt(e.clientY) - b.start, moved: false })}
-            onClick={external ? () => onSelect(b) : undefined}
+            className={`block kind-${b.kind} ${task?.done ? 'is-done' : ''} ${short ? 'is-short' : ''} ${external ? 'is-external' : ''} ${routine ? 'is-routine' : ''} ${lifted === b.id ? 'is-lifted' : ''} ${flashId === b.id ? 'is-flash' : ''}`}
+            style={{ top, height: h, '--c': project?.color, ...side } as CSSProperties}
+            onPointerDown={fixed ? (e) => e.stopPropagation() : (e) => startDrag(e, { mode: 'move', id: b.id, grabOffset: minAt(e.clientY) - b.start, moved: false })}
+            onClick={fixed ? () => onSelect(b) : undefined}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
@@ -166,11 +181,11 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
             }}
             role="button"
             tabIndex={0}
-            aria-label={`${b.title}, ${formatMinutes(b.start)} to ${formatMinutes(b.end)}`}
+            aria-label={`${routine ? 'Routine: ' : ''}${b.title}, ${formatMinutes(b.start)} to ${formatMinutes(b.end)}`}
           >
-            <span className="block-title">{external && <span className="block-source" aria-hidden>G</span>}{project && <i className="dot" />}{b.title || 'Untitled'}</span>
+            <span className="block-title">{external && <span className="block-source" aria-hidden>G</span>}{routine && <span className="block-source" aria-hidden>↻</span>}{project && <i className="dot" />}{b.title || 'Untitled'}</span>
             <span className="block-time num">{formatMinutes(b.start)} – {formatMinutes(b.end)}</span>
-            {!external && (
+            {!fixed && (
               <span
                 className="block-resize"
                 onPointerDown={(e) => startDrag(e, { mode: 'resize', id: b.id, grabOffset: 0, moved: false })}

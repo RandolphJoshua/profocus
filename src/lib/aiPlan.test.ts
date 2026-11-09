@@ -216,3 +216,19 @@ describe('buildPlanRequest', () => {
     expect(system + user).not.toMatch(/apiKey/i);
   });
 });
+
+describe('routines as fixed blocks', () => {
+  const routine = { id: 'r1', title: 'Deep work', days: [1], start: 540, end: 660, kind: 'focus' as const, createdAt: '2026-11-01T00:00:00.000Z' };
+  const s = stateWith({ routines: [routine] });
+  test('buildPlanRequest lists instances as fixed blocks', () => {
+    const { user } = buildPlanRequest(s, { ...clock, prompt: 'plan' });
+    expect(user).toContain('"title":"Deep work","fixed":true');
+    expect(user).toContain('"date":"2026-11-09"'); // the routine runs Mondays; the next one (the 16th) is past the 7-day window
+    expect(user).not.toContain('"date":"2026-11-16"');
+  });
+  test('parsePlan drops a block that overlaps an instance', () => {
+    const r = plan({ blocks: [blk({ start: '10:00', end: '11:00', title: 'Clash' })] }, s);
+    expect(r.items).toEqual([]);
+    expect(r.dropped.join(' ')).toContain('overlaps Deep work');
+  });
+});

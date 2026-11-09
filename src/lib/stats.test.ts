@@ -329,3 +329,12 @@ describe('seasonWeekStrip', () => {
     expect(seasonWeekStrip(base(), 'nope', '2026-11-04').cells).toEqual([]);
   });
 });
+
+describe('routines in free and blocked time', () => {
+  const routine = { id: 'r1', title: 'Deep work', days: [3], start: 540, end: 660, kind: 'focus' as const, createdAt: '2026-11-01T00:00:00.000Z' };
+  it('dayScore counts a focus routine as blocked time', () => {
+    const s = { ...emptyState(), routines: [routine] };
+    expect(dayScore(s, '2026-11-04').blockedMin).toBe(120); // Wednesday
+    expect(dayScore(s, '2026-11-05').blockedMin).toBe(0);
+  });
+});

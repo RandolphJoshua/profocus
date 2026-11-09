@@ -75,6 +75,30 @@ export interface TimeBlock {
   source?: 'google';
   /** The external calendar's event id. */
   externalId?: string;
+  /** Plain-text how-to or details (max 2000 chars). */
+  notes?: string;
+  /** Render-only: set on virtual routine instances (id `rt:<routineId>:<date>`). Never persisted. */
+  routineId?: ID;
+}
+
+/** A recurring time block. It shows on Today and Week as virtual instances and is never copied into `AppState.blocks`. */
+export interface Routine {
+  id: ID;
+  title: string;
+  /** Weekdays it runs on: 0 = Sunday … 6 = Saturday. At least one. */
+  days: number[];
+  /** Minutes from local midnight. end > start. */
+  start: number;
+  end: number;
+  kind: BlockKind;
+  /** Shown in the block editor and on the Routines section; plain text, newlines kept. */
+  notes?: string;
+  projectId?: ID;
+  /** First and last date it applies (inclusive). Both optional. */
+  from?: DateKey;
+  until?: DateKey;
+  paused?: boolean;
+  createdAt: string;
 }
 
 export interface FocusSession {
@@ -162,6 +186,9 @@ export interface AppState {
   seasons: Season[];
   tasks: Task[];
   blocks: TimeBlock[];
+  routines: Routine[];
+  /** `"<routineId>|<YYYY-MM-DD>"` entries: days a routine is skipped. Capped at the last 1000. */
+  routineSkips: string[];
   sessions: FocusSession[];
   habits: Habit[];
   /** date -> ids of habits completed that day */

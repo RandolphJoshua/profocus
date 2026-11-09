@@ -1,3 +1,4 @@
+import { normalizeBlocks, normalizeRoutines, normalizeSkips } from './routines';
 import type { AppState, Settings, Task } from './types';
 
 export const STORAGE_KEY = 'profocus:v1';
@@ -35,6 +36,8 @@ export function emptyState(): AppState {
     seasons: [],
     tasks: [],
     blocks: [],
+    routines: [],
+    routineSkips: [],
     sessions: [],
     habits: [],
     habitLog: {},
@@ -86,7 +89,9 @@ export function normalizeState(raw: unknown): AppState {
     goals: arr(raw.goals, []),
     seasons: arr(raw.seasons, []),
     tasks: arr<unknown>(raw.tasks, []).map(normalizeTask) as Task[],
-    blocks: arr(raw.blocks, []),
+    blocks: normalizeBlocks(raw.blocks),
+    routines: normalizeRoutines(raw.routines),
+    routineSkips: normalizeSkips(raw.routineSkips),
     sessions: arr(raw.sessions, []),
     habits: arr(raw.habits, []),
     habitLog: rec(raw.habitLog),

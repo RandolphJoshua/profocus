@@ -4,6 +4,7 @@ import { CommandPalette } from './components/CommandPalette';
 import { FocusTimer } from './components/FocusTimer';
 import { PlanDay } from './components/PlanDay';
 import { PlanWeek } from './components/PlanWeek';
+import { SosReset } from './components/SosReset';
 import { ToastProvider, useToast } from './components/Toaster';
 import { startOfWeek } from './lib/date';
 import { AiPlanProvider, useAiPlan } from './state/aiPlan';
@@ -98,6 +99,7 @@ function AppShell() {
   const [focus, setFocus] = useState(isFocusHash);
   const [navigated, setNavigated] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [sos, setSos] = useState(false);
   const [ritual, setRitual] = useState<'day' | 'week' | null>(null);
   const viewRef = useRef(view);
   const quickAddRef = useRef<HTMLInputElement>(null);
@@ -214,6 +216,7 @@ function AppShell() {
             ))}
           </ul>
         </nav>
+        <button type="button" className="link-btn sos-link" onClick={() => setSos(true)} aria-haspopup="dialog">SOS</button>
         {view !== 'today' && <div className="sidebar-timer"><FocusTimer compact /></div>}
         {sync.status !== 'off' && (
           <p className="sync-line" role="status">
@@ -235,7 +238,10 @@ function AppShell() {
         </div>
       </main>
       {palette && !focus && (
-        <CommandPalette views={VIEWS} onGo={(v) => isViewId(v) && go(v)} onRitual={openRitual} onClose={() => setPalette(false)} />
+        <CommandPalette views={VIEWS} onGo={(v) => isViewId(v) && go(v)} onRitual={openRitual} onSos={() => setSos(true)} onClose={() => setPalette(false)} />
+      )}
+      {sos && !focus && (
+        <SosReset onClose={() => setSos(false)} onPickTask={() => { setSos(false); go('today'); }} />
       )}
       {ritual === 'day' && view === 'today' && <PlanDay onClose={() => setRitual(null)} />}
       {ritual === 'week' && view === 'week' && <PlanWeek week={startOfWeek(today, state.settings.weekStartsOn)} onClose={() => setRitual(null)} />}

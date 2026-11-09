@@ -1,5 +1,6 @@
 import { addDays, fromKey, startOfWeek, toKey, weekDays } from './date';
 import { nextFreeSlot } from '../state/reducer';
+import { blocksForDay } from './routines';
 import type { AppState, DateKey, FocusSession, ID, Season, Task, TimeBlock } from './types';
 
 export function focusMinutesOn(sessions: FocusSession[], date: DateKey): number {
@@ -109,8 +110,8 @@ export interface DayScore {
 export function dayScore(state: AppState, date: DateKey): DayScore {
   const plan = state.days[date];
   const focusMin = focusMinutesOn(state.sessions, date);
-  const blockedMin = state.blocks
-    .filter((b) => b.date === date && b.kind === 'focus')
+  const blockedMin = blocksForDay(state, date)
+    .filter((b) => b.kind === 'focus')
     .reduce((sum, b) => sum + (b.end - b.start), 0);
   const habits = state.habits.filter((h) => !h.archived && h.createdAt.slice(0, 10) <= date);
   const habitsDone = habits.filter((h) => state.habitLog[date]?.includes(h.id)).length;

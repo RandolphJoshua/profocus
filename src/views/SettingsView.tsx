@@ -282,7 +282,7 @@ export function SettingsView() {
           <p className="muted">Backups and resets.</p>
         </div>
         <div className="setting-body stack">
-        <p className="muted">Everything lives in this browser (localStorage), and in the cloud when you are signed in. Export a backup now and then. "Add from file" merges goals, projects, seasons, tasks and habits from a file without changing anything you already have; "Import JSON" replaces everything.</p>
+        <p className="muted">Everything lives in this browser (localStorage), and in the cloud when you are signed in. Export a backup now and then. "Add from file" merges goals, projects, seasons, tasks, habits and routines from a file without changing anything you already have; "Import JSON" replaces everything.</p>
         <div className="row gap">
           <button type="button" className="btn" onClick={exportData}>Export JSON</button>
           <button type="button" className="btn" onClick={() => fileRef.current?.click()}>Import JSON…</button>

@@ -2,14 +2,15 @@ import type { AppState } from './types';
 
 export type SyncChoice = 'remote' | 'local' | 'ask';
 
-/** True when the state holds any user data (tasks, blocks, sessions, habits or goals). */
+/** True when the state holds any user data (tasks, blocks, sessions, habits, goals or routines). */
 export function isTouched(state: AppState): boolean {
   return (
     state.tasks.length > 0 ||
     state.blocks.length > 0 ||
     state.sessions.length > 0 ||
     state.habits.length > 0 ||
-    state.goals.length > 0
+    state.goals.length > 0 ||
+    (state.routines?.length ?? 0) > 0
   );
 }
 

@@ -199,3 +199,48 @@ describe('mergeState', () => {
     expect(mergeState(merged, theirs)).toEqual(merged);
   });
 });
+
+describe('routines', () => {
+  const r = { id: 'r1', title: 'Walk', days: [1], start: 360, end: 420, kind: 'personal' as const, createdAt: NOW };
+
+  it('adds, updates and deletes a routine, dropping only its skips', () => {
+    let s = reducer(emptyState(), { type: 'ADD_ROUTINE', routine: r });
+    s = reducer(s, { type: 'ADD_ROUTINE', routine: { ...r, id: 'r10' } });
+    s = reducer(s, { type: 'UPDATE_ROUTINE', id: 'r1', patch: { title: 'Run', id: 'zzz', paused: true } });
+    expect(s.routines[0]).toMatchObject({ id: 'r1', title: 'Run', paused: true });
+    s = reducer(s, { type: 'BATCH', actions: [
+      { type: 'SKIP_ROUTINE', id: 'r1', date: '2026-11-09' },
+      { type: 'SKIP_ROUTINE', id: 'r10', date: '2026-11-09' },
+    ] });
+    s = reducer(s, { type: 'DELETE_ROUTINE', id: 'r1' });
+    expect(s.routines.map((x) => x.id)).toEqual(['r10']);
+    expect(s.routineSkips).toEqual(['r10|2026-11-09']);
+  });
+
+  it('skips and unskips a date, once', () => {
+    let s = reducer(emptyState(), { type: 'SKIP_ROUTINE', id: 'r1', date: '2026-11-09' });
+    s = reducer(s, { type: 'SKIP_ROUTINE', id: 'r1', date: '2026-11-09' });
+    expect(s.routineSkips).toEqual(['r1|2026-11-09']);
+    s = reducer(s, { type: 'UNSKIP_ROUTINE', id: 'r1', date: '2026-11-09' });
+    expect(s.routineSkips).toEqual([]);
+  });
+
+  it('caps skips at the last 1000', () => {
+    let s = emptyState();
+    for (let i = 0; i < 1005; i++) s = reducer(s, { type: 'SKIP_ROUTINE', id: 'r1', date: `d${i}` });
+    expect(s.routineSkips).toHaveLength(1000);
+    expect(s.routineSkips[0]).toBe('r1|d5');
+  });
+
+  it('mergeState adds routines by new id, with skips for the new ones only', () => {
+    const mine = { ...emptyState(), routines: [r], routineSkips: ['r1|2026-11-09'] };
+    const theirs = {
+      ...emptyState(),
+      routines: [{ ...r, title: 'Theirs, same id' }, { ...r, id: 'r2', title: 'New' }],
+      routineSkips: ['r1|2026-11-16', 'r2|2026-11-09'],
+    };
+    const merged = reducer(mine, { type: 'MERGE_STATE', state: theirs });
+    expect(merged.routines.map((x) => [x.id, x.title])).toEqual([['r1', 'Walk'], ['r2', 'New']]);
+    expect(merged.routineSkips).toEqual(['r1|2026-11-09', 'r2|2026-11-09']);
+  });
+});

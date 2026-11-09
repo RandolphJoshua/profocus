@@ -1,0 +1,59 @@
+/* Routines (recurring blocks), block notes, side-by-side overlaps and the SOS reset. Tokens only. */
+
+.row.wrap { flex-wrap: wrap; }
+.grid-2 { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.routine-notes { white-space: pre-wrap; overflow-wrap: anywhere; }
+.form-error { color: var(--negative); font-size: var(--fs-small); }
+textarea { resize: vertical; }
+
+/* Routine instances on the day columns */
+.block.is-routine, .block.is-routine:active { cursor: default; }
+.block.is-routine .block-source { margin-right: 4px; }
+
+/* Day chips: S M T W T F S */
+.day-picker { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.day-picker legend { padding: 0; margin-bottom: 4px; font-size: var(--fs-small); color: var(--muted); }
+.day-chips { display: inline-flex; gap: 4px; }
+.day-chip {
+  display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border-radius: 999px;
+  border: 1px solid var(--control); background: var(--surface); color: var(--muted); font-size: var(--fs-small); font-weight: 500;
+}
+button.day-chip { cursor: pointer; width: 32px; height: 32px; transition: background-color var(--t-hover) var(--ease-out), border-color var(--t-hover) var(--ease-out); }
+button.day-chip:hover { border-color: var(--text); }
+.day-chip.is-on { background: var(--accent-tint); border-color: var(--accent); color: var(--accent-ink); }
+
+/* Routines section on the Habits screen */
+.routines { margin-top: 32px; display: flex; flex-direction: column; gap: 12px; }
+.routines-head { align-items: center; }
+.section-title { font-size: var(--fs-section); line-height: 24px; font-weight: 600; }
+.routines .hint { margin: 0; }
+.routine-group { display: flex; flex-direction: column; gap: 4px; }
+.routine-part { font-size: var(--fs-body); font-weight: 600; margin-bottom: 4px; }
+.routine-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px; align-items: center; padding: 10px 0; border-top: 1px solid var(--rule); }
+.routine-row:first-child { border-top: 0; }
+.routine-row.is-paused .routine-main, .routine-row.is-paused .day-chips { opacity: 0.6; }
+.routine-main { display: flex; flex-direction: column; min-width: 0; }
+.routine-title { font-weight: 500; display: flex; gap: 8px; align-items: center; }
+.routine-time { color: var(--muted); }
+.routine-note-line { color: var(--muted); font-size: var(--fs-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.routine-actions { flex-wrap: nowrap; }
+@media (max-width: 760px) {
+  .routine-row { grid-template-columns: 1fr; gap: 8px; }
+  .routine-actions { flex-wrap: wrap; }
+  .sos-link { display: none; }
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* SOS reset */
+.sidebar .sos-link { margin-top: auto; align-self: flex-start; padding: 4px 8px; color: var(--sidebar-ink); }
+.sidebar .sos-link:hover { color: var(--sidebar-ink-active); }
+.sos-link + .sidebar-timer { margin-top: 0; }
+.sos-clock { font-size: var(--fs-kpi); line-height: 48px; font-weight: 600; text-align: center; }
+.sos-closing { font-size: var(--fs-section); line-height: 28px; font-weight: 600; text-align: center; padding: 8px 0; }
+.sos-steps { list-style: decimal; margin: 0; padding: 0 0 0 24px; display: flex; flex-direction: column; gap: 4px; }
+.sos-steps li { padding: 8px 10px; border-radius: var(--radius-row); color: var(--muted); }
+.sos-steps li::marker { font-variant-numeric: tabular-nums; }
+.sos-steps li > span:first-child { margin-right: 8px; }
+.sos-steps li.is-active { background: var(--accent-tint); color: var(--text); font-weight: 500; }
+.sos-steps li.is-done { text-decoration: line-through; }
+.sos-min { color: var(--muted); font-size: var(--fs-small); white-space: nowrap; }

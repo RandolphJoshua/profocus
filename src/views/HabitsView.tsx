@@ -3,6 +3,7 @@ import { addDays, formatDay, shortWeekday } from '../lib/date';
 import { habitStreak } from '../lib/stats';
 import { nextColor, uid } from '../lib/storage';
 import { useStore, useToday } from '../state/store';
+import { RoutinesSection } from './RoutinesSection';
 
 const HISTORY_DAYS = 28;
 
@@ -90,6 +91,8 @@ export function HabitsView() {
           })}
         </div>
       )}
+
+      <RoutinesSection />
     </div>
   );
 }

@@ -18,13 +18,14 @@ interface CommandPaletteProps {
   views: readonly { id: string; label: string }[];
   onGo: (view: string) => void;
   onRitual: (kind: 'day' | 'week') => void;
+  onSos: () => void;
   onClose: () => void;
 }
 
 const MAX_TASK_RESULTS = 6;
 
 /** ⌘K / Ctrl+K: jump to a screen, run a ritual, add a task with the quick-add grammar, or focus on a task. */
-export function CommandPalette({ views, onGo, onRitual, onClose }: CommandPaletteProps) {
+export function CommandPalette({ views, onGo, onRitual, onSos, onClose }: CommandPaletteProps) {
   const { state, dispatch } = useStore();
   const timer = useTimer();
   const today = useToday();
@@ -54,6 +55,7 @@ export function CommandPalette({ views, onGo, onRitual, onClose }: CommandPalett
       { id: 'plan-day', label: 'Plan my day', run: () => onRitual('day') },
       { id: 'plan-week', label: 'Plan my week', run: () => onRitual('week') },
       { id: 'plan-ai', label: 'Plan with AI', run: () => aiPlan.open() },
+      { id: 'sos', label: 'SOS: 20-minute reset', run: onSos },
       { id: 'start-focus', label: 'Start focus', run: () => startFocus() },
     ].filter((c) => c.label.toLowerCase().includes(needle));
     if (!text) return commands;
@@ -74,7 +76,7 @@ export function CommandPalette({ views, onGo, onRitual, onClose }: CommandPalett
     };
     const ask: Command[] = aiEnabled ? [{ id: 'ask-ai', label: `Ask AI: ${text}`, run: () => aiPlan.open({ prompt: text, run: true }) }] : [];
     return [...commands, ...ask, ...tasks, add];
-  }, [query, views, onGo, onRitual, state, timer, today, dispatch, toast, aiEnabled, aiPlan]);
+  }, [query, views, onGo, onRitual, onSos, state, timer, today, dispatch, toast, aiEnabled, aiPlan]);
 
   const current = Math.min(active, Math.max(items.length - 1, 0));
   const activeId = items[current] ? `palette-opt-${items[current].id}` : undefined;

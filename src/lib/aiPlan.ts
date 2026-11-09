@@ -1,4 +1,5 @@
 import { addDays, fromKey, isValidKey, shortWeekday } from './date';
+import { blocksForDay, routineInstances } from './routines';
 import type { BlockItem, ParsedPlan, PlanClock, PlanItem, TaskItem, TaskPatch, UpdateItem } from './aiPlanTypes';
 import type { AppState, BlockKind, DateKey, Priority } from './types';
 
@@ -40,7 +41,6 @@ export const hhmm = (min: number): string => `${String(Math.floor(min / 60)).pad
 export function buildPlanRequest(state: AppState, input: PlanClock & { prompt: string }): { system: string; user: string } {
   const { today, nowMin, prompt } = input;
   const projectName = new Map(state.projects.map((p) => [p.id, p.name]));
-  const last = addDays(today, CONTEXT_DAYS - 1);
   const tasks = state.tasks.filter((t) => !t.done).slice(0, MAX_CONTEXT_TASKS).map((t) => ({
     id: t.id, title: t.title,
     ...(t.estimateMin ? { estimateMin: t.estimateMin } : {}),
@@ -48,9 +48,8 @@ export function buildPlanRequest(state: AppState, input: PlanClock & { prompt: s
     ...(t.projectId && projectName.has(t.projectId) ? { project: projectName.get(t.projectId) } : {}),
     ...(t.date ? { date: t.date } : {}),
   }));
-  const blocks = state.blocks
-    .filter((b) => b.date >= today && b.date <= last)
-    .sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start)
+  const blocks = Array.from({ length: CONTEXT_DAYS }, (_, i) => addDays(today, i))
+    .flatMap((d) => blocksForDay(state, d))
     .map((b) => ({ date: b.date, start: hhmm(b.start), end: hhmm(b.end), title: b.title, fixed: true }));
   const context = {
     today: { date: today, weekday: fromKey(today).toLocaleDateString('en-US', { weekday: 'long' }) },
@@ -136,7 +135,10 @@ export function parsePlan(text: string, state: AppState, clock: PlanClock): Pars
     items.push(item);
   }
 
-  const taken = state.blocks.map((b) => ({ date: b.date, start: b.start, end: b.end, title: b.title }));
+  const taken = [
+    ...state.blocks,
+    ...Array.from({ length: HORIZON_DAYS + 1 }, (_, i) => routineInstances(state, addDays(today, i))).flat(),
+  ].map((b) => ({ date: b.date, start: b.start, end: b.end, title: b.title }));
   for (const [i, b] of capped(asList(raw.blocks), 'blocks').entries()) {
     const title = cleanTitle(b.title);
     const start = parseClock(b.start);

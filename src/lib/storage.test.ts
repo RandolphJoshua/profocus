@@ -62,3 +62,61 @@ describe('monday fields', () => {
     expect(seen?.[0]).toBe('500');
   });
 });
+
+describe('routines', () => {
+  const good = { id: 'r1', title: 'Walk', days: [0, 3], start: 360, end: 420, kind: 'personal', createdAt: '2026-11-01T00:00:00.000Z' };
+  const routines = (list: unknown[]) => normalizeState({ routines: list }).routines;
+
+  it('defaults to no routines and no skips', () => {
+    expect(normalizeState({})).toMatchObject({ routines: [], routineSkips: [] });
+  });
+
+  it('keeps a valid routine and its optional fields', () => {
+    const full = { ...good, notes: 'Line 1\nLine 2', projectId: 'p-work', from: '2026-11-01', until: '2026-12-31', paused: true };
+    expect(routines([full])).toEqual([full]);
+  });
+
+  it('collapses duplicate days and sorts them', () => {
+    expect(routines([{ ...good, days: [3, 0, 3] }])[0]?.days).toEqual([0, 3]);
+  });
+
+  it('drops invalid routines', () => {
+    const bad = [
+      null, 'x', { ...good, id: '' }, { ...good, id: 'a|b' }, { ...good, title: '  ' }, { ...good, title: 'x'.repeat(121) },
+      { ...good, days: [] }, { ...good, days: [7] }, { ...good, days: [1.5] }, { ...good, days: 'mon' },
+      { ...good, start: -1 }, { ...good, start: 1440, end: 1445 }, { ...good, end: good.start + 4 }, { ...good, end: 1441 },
+      { ...good, kind: 'party' }, { ...good, from: '2026-13-01' }, { ...good, until: 'soon' },
+    ];
+    expect(routines(bad)).toEqual([]);
+    expect(routines([{ ...good, end: 1440 }, { ...good, id: 'r2', start: 0, end: 5 }])).toHaveLength(2);
+  });
+
+  it('keeps the first routine when ids repeat', () => {
+    expect(routines([good, { ...good, title: 'Again' }]).map((r) => r.title)).toEqual(['Walk']);
+  });
+
+  it('caps routine and block notes at 2000 characters', () => {
+    expect(routines([{ ...good, notes: 'n'.repeat(2500) }])[0]?.notes).toHaveLength(2000);
+    const blocks = normalizeState({ blocks: [{ id: 'b1', date: '2026-11-04', start: 0, end: 30, title: 'T', kind: 'focus', notes: 'n'.repeat(2500) }] }).blocks;
+    expect(blocks[0]?.notes).toHaveLength(2000);
+  });
+
+  it('drops virtual rt: blocks and the render-only routineId', () => {
+    const blocks = normalizeState({
+      blocks: [
+        { id: 'rt:r1:2026-11-04', date: '2026-11-04', start: 0, end: 30, title: 'Virtual', kind: 'focus', routineId: 'r1' },
+        { id: 'b1', date: '2026-11-04', start: 0, end: 30, title: 'Real', kind: 'focus', routineId: 'r1' },
+      ],
+    }).blocks;
+    expect(blocks.map((b) => b.id)).toEqual(['b1']);
+    expect(blocks[0]).not.toHaveProperty('routineId');
+  });
+
+  it('keeps only string skips, last 1000', () => {
+    const skips = Array.from({ length: 1100 }, (_, i) => `r1|d${i}`);
+    const out = normalizeState({ routineSkips: [...skips, 5, null] }).routineSkips;
+    expect(out).toHaveLength(1000);
+    expect(out.at(-1)).toBe('r1|d1099');
+    expect(normalizeState({ routineSkips: 'x' }).routineSkips).toEqual([]);
+  });
+});

@@ -1,18 +1,18 @@
 import { useState } from 'react';
-import { formatDay, formatMinutes } from '../lib/date';
+import { formatDay, formatMinutes, fromTimeInput, toTimeInput } from '../lib/date';
 import { uid } from '../lib/storage';
 import type { BlockKind, DateKey, TimeBlock } from '../lib/types';
 import { useStore } from '../state/store';
 import { useTimer } from '../state/timer';
 import { Modal } from './Modal';
+import { RoutineBlockModal } from './RoutineBlockModal';
+
+const NOTES_MAX = 2000;
 
 export type BlockDraft = Omit<TimeBlock, 'id'> & { id?: string };
 
-const toTime = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-const fromTime = (v: string) => {
-  const [h, m] = v.split(':').map(Number);
-  return (h ?? 0) * 60 + (m ?? 0);
-};
+const toTime = toTimeInput;
+const fromTime = fromTimeInput;
 
 export function newDraft(date: DateKey, start: number, end: number): BlockDraft {
   return { date, start, end, title: '', kind: 'focus' };
@@ -34,10 +34,13 @@ export function BlockEditor({ draft, onClose }: { draft: BlockDraft; onClose: ()
       title: b.title.trim() || linked?.title || 'Focus block',
       end: Math.max(b.end, b.start + 5),
       projectId: b.projectId ?? linked?.projectId,
+      notes: b.notes?.trim() ? b.notes : undefined,
     };
     dispatch(isNew ? { type: 'ADD_BLOCK', block } : { type: 'UPDATE_BLOCK', id: block.id, patch: block });
     onClose();
   };
+
+  if (draft.routineId) return <RoutineBlockModal draft={draft} onClose={onClose} />;
 
   if (draft.source === 'google') {
     return (
@@ -96,6 +99,9 @@ export function BlockEditor({ draft, onClose }: { draft: BlockDraft; onClose: ()
             <option value="">None</option>
             {state.projects.filter((p) => !p.archived).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
+        </label>
+        <label>Notes
+          <textarea rows={3} maxLength={NOTES_MAX} value={b.notes ?? ''} placeholder="How-to, links, what done looks like" onChange={(e) => setB({ ...b, notes: e.target.value })} />
         </label>
         <div className="row gap">
           <button type="submit" className="btn primary">{isNew ? 'Add block' : 'Save'}</button>

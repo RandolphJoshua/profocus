@@ -13,6 +13,7 @@ describe('isTouched', () => {
     expect(isTouched({ ...base, sessions: [{ id: 's' } as never] })).toBe(true);
     expect(isTouched({ ...base, habits: [{ id: 'h' } as never] })).toBe(true);
     expect(isTouched({ ...base, goals: [{ id: 'g' } as never] })).toBe(true);
+    expect(isTouched({ ...base, routines: [{ id: 'r' } as never] })).toBe(true);
   });
 
   it('ignores settings changes', () => {

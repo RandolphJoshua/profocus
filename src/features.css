@@ -10,7 +10,7 @@
 .traj-pill.is-off-track { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
 
 /* Bullet: share done (fill) against share of time used (tick). */
-.traj-track { position: relative; height: 4px; margin: 6px 0 4px; border-radius: 2px; background: var(--rule); }
+.traj-track { position: relative; height: 4px; margin: 6px 0 4px; border-radius: 2px; background: var(--accent-track); }
 .traj-fill { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--accent); }
 .traj-tick { position: absolute; top: -3px; bottom: -3px; width: 1px; margin-left: -0.5px; background: var(--text); }
 
@@ -27,7 +27,7 @@
 
 .season-name { font-size: 16px; line-height: 24px; font-weight: 600; }
 .season-line { margin: 4px 0 0; }
-.season-track { position: relative; height: 4px; margin: 8px 0 4px; border-radius: 2px; background: var(--rule); }
+.season-track { position: relative; height: 4px; margin: 8px 0 4px; border-radius: 2px; background: var(--accent-track); }
 .season-fill { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--accent); }
 .season-actions { display: flex; gap: 4px; margin: 4px 0 0 -16px; }
 .season-empty { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
@@ -40,7 +40,7 @@
 .goal-group { margin: var(--gap) 0 8px; font-size: var(--fs-section); line-height: 20px; font-weight: 600; }
 .past-seasons { margin-top: var(--gap); }
 .past-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
-.past-season { background: var(--panel); border-radius: var(--radius-card); padding: 12px var(--pad); display: flex; flex-direction: column; gap: 4px; }
+.past-season { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 12px var(--pad); display: flex; flex-direction: column; gap: 4px; }
 .past-top { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; }
 
 /* v0.5 season summary on Review */
@@ -60,12 +60,12 @@
 .week-strip { display: flex; gap: 4px; margin: 8px 0 0; padding: 0; list-style: none; }
 .week-cell {
   flex: 1 1 0; min-width: 0; height: 24px; display: flex; align-items: center; justify-content: center;
-  border-radius: 4px; font-size: var(--fs-small); background: var(--panel); color: var(--muted); border: 1px solid var(--rule);
+  border-radius: 4px; font-size: var(--fs-small); background: var(--raised); color: var(--muted); border: 1px solid var(--rule);
 }
-.week-cell.is-planned { background: var(--accent); border-color: var(--accent); color: var(--surface); }
-.week-cell.is-unplanned { background: var(--rule); border-color: var(--rule); }
+.week-cell.is-planned { background: var(--accent); border-color: var(--accent); color: #ffffff; }
+.week-cell.is-unplanned { background: var(--accent-track); border-color: var(--accent-track); }
 .week-cell.is-current { border-color: var(--text); color: var(--text); }
-.week-cell.is-current.is-planned { background: var(--accent); color: var(--surface); }
+.week-cell.is-current.is-planned { background: var(--accent); color: #ffffff; }
 @media (max-width: 760px) { .week-cell span { display: none; } }
 .season-goal-list { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 0; padding: 0; list-style: none; }
 .season-goal-list li { display: flex; align-items: center; gap: 10px; }
@@ -74,3 +74,20 @@
 .season-big .season-actions { margin: 8px 0 0; }
 .season-strip-line { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin: 0 0 var(--gap); }
 .season-strip-line .link-btn { padding: 0; }
+
+/* Google events: neutral grey band, no project colour */
+.block[class*="kind-"].is-external { background: var(--raised); border: 1px solid var(--border); border-left: 4px solid var(--faint); }
+
+/* Dark sidebar: compact timer and sync line follow the sidebar tokens */
+.sidebar .sync-line, .sidebar .sync-line .link-btn { color: var(--sidebar-ink); }
+.sidebar .timer.is-compact { background: #1f1f23; border-color: var(--sidebar-active); color: var(--sidebar-ink-active); }
+.sidebar .timer-modes { background: var(--sidebar-bg); border-color: var(--sidebar-active); }
+.sidebar .timer-modes button { color: var(--sidebar-ink); }
+.sidebar .timer-modes button:hover { color: var(--sidebar-ink-active); }
+.sidebar .timer-modes button.is-on { background: var(--sidebar-active); color: var(--sidebar-ink-active); }
+.sidebar .timer .ring-bg { stroke: #3a2430; }
+.sidebar .timer .ring-fg { stroke: var(--sidebar-mark); }
+.sidebar .timer-label, .sidebar .timer-task, .sidebar .timer-foot { color: var(--sidebar-ink); }
+.sidebar .timer .btn { background: var(--sidebar-active); border-color: var(--sidebar-active); color: var(--sidebar-ink-active); }
+.sidebar .timer .btn.primary { background: var(--sidebar-mark); border-color: var(--sidebar-mark); color: #1a0a12; }
+.sidebar .timer select { background: #1f1f23; border-color: var(--sidebar-active); color: var(--sidebar-ink-active); }

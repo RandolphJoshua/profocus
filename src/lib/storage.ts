@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sound: true,
 };
 
-export const PROJECT_COLORS = ['#e0603a', '#3a7be0', '#2f9e6e', '#9b5de5', '#d4a017', '#e04a8a', '#4bb3c4', '#7a7a7a'];
+export const PROJECT_COLORS = ['#e0603a', '#3a7be0', '#2f9e6e', '#c2410c', '#d4a017', '#e04a8a', '#4bb3c4', '#7a7a7a'];
 
 /** First palette colour not already used, so new projects/habits stay distinguishable. */
 export function nextColor(used: string[]): string {
@@ -29,7 +29,7 @@ export function emptyState(): AppState {
     projects: [
       { id: 'p-work', name: 'Work', color: '#3a7be0' },
       { id: 'p-personal', name: 'Personal', color: '#2f9e6e' },
-      { id: 'p-learning', name: 'Learning', color: '#9b5de5' },
+      { id: 'p-learning', name: 'Learning', color: '#c2410c' },
     ],
     goals: [],
     seasons: [],

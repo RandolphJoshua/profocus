@@ -15,6 +15,7 @@ export function Roll({ value }: { value: string }) {
         {[...value].map((ch, i) =>
           /\d/.test(ch) ? (
             <span key={i} className="roll-col">
+              <span className="roll-size">{ch}</span>
               <span className="roll-strip" style={{ '--d': ch } as CSSProperties}>
                 {DIGITS.map((n) => <span key={n} data-n={n} />)}
               </span>

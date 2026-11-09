@@ -57,9 +57,11 @@
 .task-list > .task-item:last-child > .task-clip { padding-bottom: 0; }
 
 /* ---------- rolling figures ---------- */
-.roll-digits { --roll-h: 38px; display: inline-flex; align-items: center; font-variant-numeric: tabular-nums; white-space: pre; }
-.roll-col { display: inline-block; height: var(--roll-h); overflow: clip; }
-.roll-strip { display: flex; flex-direction: column; transform: translateY(calc(var(--d) * var(--roll-h) * -1)); transition: transform var(--t-roll) var(--ease-out); }
+.roll-digits { --roll-h: 46px; display: inline-flex; align-items: center; font-variant-numeric: proportional-nums; white-space: pre; }
+/* Each column is as wide as the digit it shows (.roll-size), so narrow digits do not leave gaps. */
+.roll-col { position: relative; display: inline-block; height: var(--roll-h); overflow: clip; }
+.roll-size { visibility: hidden; line-height: var(--roll-h); }
+.roll-strip { position: absolute; top: 0; left: 0; right: 0; text-align: center; display: flex; flex-direction: column; transform: translateY(calc(var(--d) * var(--roll-h) * -1)); transition: transform var(--t-roll) var(--ease-out); }
 .roll-strip > span { display: block; height: var(--roll-h); line-height: var(--roll-h); }
 .roll-strip > span::before { content: attr(data-n); }
 

@@ -1,7 +1,7 @@
 import type { TimeBlock } from '../lib/types';
 import { parseQuickAdd } from '../lib/parse';
 import { emptyState } from '../lib/storage';
-import { nextFreeSlot, quickAddActions, reducer } from './reducer';
+import { mergeState, nextFreeSlot, quickAddActions, reducer } from './reducer';
 
 const TODAY = '2026-11-04';
 let n = 0;
@@ -174,5 +174,28 @@ describe('SET_EXTERNAL_BLOCKS', () => {
     const s0 = { ...emptyState(), blocks: [mine, g('a', '2026-11-03')] };
     const s1 = reducer(s0, { type: 'SET_EXTERNAL_BLOCKS', source: 'google', range, blocks: [] });
     expect(s1.blocks).toEqual([mine]);
+  });
+});
+
+describe('mergeState', () => {
+  it('adds new items by id and never overwrites or removes existing ones', () => {
+    const mine = reducer(emptyState(), { type: 'ADD_TASK', task: { id: 't1', title: 'Mine', done: true, createdAt: NOW } });
+    const theirs = {
+      ...emptyState(),
+      tasks: [
+        { id: 't1', title: 'Theirs (same id)', done: false, createdAt: NOW },
+        { id: 't2', title: 'New', done: false, createdAt: NOW },
+      ],
+      goals: [{ id: 'g1', title: 'Goal', status: 'active' as const, createdAt: NOW }],
+      seasons: [{ id: 's1', name: 'S', start: '2026-11-09', end: '2027-01-31', goalIds: ['g1'], createdAt: NOW }],
+      habits: [{ id: 'h1', name: 'Read', color: '#000', createdAt: NOW }],
+    };
+    const merged = reducer(mine, { type: 'MERGE_STATE', state: theirs });
+    expect(merged.tasks.map((t) => [t.id, t.title, t.done])).toEqual([['t1', 'Mine', true], ['t2', 'New', false]]);
+    expect(merged.goals).toHaveLength(1);
+    expect(merged.seasons).toHaveLength(1);
+    expect(merged.habits).toHaveLength(1);
+    expect(merged.projects).toHaveLength(emptyState().projects.length);
+    expect(mergeState(merged, theirs)).toEqual(merged);
   });
 });

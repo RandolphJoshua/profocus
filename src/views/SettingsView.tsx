@@ -186,6 +186,7 @@ export function SettingsView() {
   const { state, dispatch } = useStore();
   const s = state.settings;
   const fileRef = useRef<HTMLInputElement>(null);
+  const mergeRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState('');
   const set = (patch: Partial<Settings>) => dispatch({ type: 'SET_SETTINGS', patch });
   const num = (v: string, lo: number, hi: number) => Math.min(hi, Math.max(lo, Number(v) || lo));
@@ -266,7 +267,7 @@ export function SettingsView() {
           <p className="muted">Backups and resets.</p>
         </div>
         <div className="setting-body stack">
-        <p className="muted">Everything lives in this browser (localStorage). Export a backup now and then, or to move to another device.</p>
+        <p className="muted">Everything lives in this browser (localStorage), and in the cloud when you are signed in. Export a backup now and then. "Add from file" merges goals, projects, seasons, tasks and habits from a file without changing anything you already have; "Import JSON" replaces everything.</p>
         <div className="row gap">
           <button type="button" className="btn" onClick={exportData}>Export JSON</button>
           <button type="button" className="btn" onClick={() => fileRef.current?.click()}>Import JSON…</button>
@@ -286,6 +287,27 @@ export function SettingsView() {
                 setMsg('Backup imported.');
               } catch {
                 setMsg('That file is not a valid ProFocus backup.');
+              }
+            }}
+          />
+          <button type="button" className="btn" onClick={() => mergeRef.current?.click()}>Add from file…</button>
+          <input
+            ref={mergeRef}
+            type="file"
+            accept="application/json,.json"
+            hidden
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (!file) return;
+              try {
+                const incoming = normalizeState(JSON.parse(await file.text()));
+                const before = state.tasks.length + state.goals.length + state.projects.length + state.seasons.length + state.habits.length;
+                dispatch({ type: 'MERGE_STATE', state: incoming });
+                const total = incoming.tasks.length + incoming.goals.length + incoming.projects.length + incoming.seasons.length + incoming.habits.length;
+                setMsg(`Added new items from the file (up to ${total}); nothing you already had was changed (${before} kept).`);
+              } catch {
+                setMsg('That file is not a valid ProFocus file.');
               }
             }}
           />

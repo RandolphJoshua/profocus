@@ -34,6 +34,7 @@ export type Action =
   | { type: 'SET_REVIEW'; week: DateKey; patch: Partial<WeeklyReview> }
   | { type: 'SET_SETTINGS'; patch: Partial<Settings> }
   | { type: 'REPLACE_STATE'; state: AppState }
+  | { type: 'MERGE_STATE'; state: AppState }
   | { type: 'BATCH'; actions: Action[] };
 
 const patchById = <T extends { id: ID }>(list: T[], id: ID, patch: Partial<T>): T[] =>
@@ -154,6 +155,8 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, settings: { ...state.settings, ...action.patch } };
     case 'REPLACE_STATE':
       return action.state;
+    case 'MERGE_STATE':
+      return mergeState(state, action.state);
     case 'BATCH':
       return action.actions.reduce(reducer, state);
   }
@@ -235,4 +238,21 @@ export function quickAddActions(
     });
   }
   return actions;
+}
+
+/** Add items from `incoming` whose ids are new; never removes or overwrites anything already here. */
+export function mergeState(state: AppState, incoming: AppState): AppState {
+  const add = <T extends { id: ID }>(mine: T[], theirs: T[]): T[] => {
+    const seen = new Set(mine.map((x) => x.id));
+    return [...mine, ...theirs.filter((x) => !seen.has(x.id))];
+  };
+  return {
+    ...state,
+    projects: add(state.projects, incoming.projects),
+    goals: add(state.goals, incoming.goals),
+    seasons: add(state.seasons, incoming.seasons),
+    tasks: add(state.tasks, incoming.tasks),
+    blocks: add(state.blocks, incoming.blocks),
+    habits: add(state.habits, incoming.habits),
+  };
 }

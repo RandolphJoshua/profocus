@@ -3,6 +3,7 @@ import { Modal } from './Modal';
 import { addDays, formatDay, formatDuration, shortWeekday, weekDays } from '../lib/date';
 import { currentSeason, weekStats } from '../lib/stats';
 import { uid } from '../lib/storage';
+import { useCoach } from '../state/coach';
 import type { DateKey, WeekPriority } from '../lib/types';
 import { useStore, useToday } from '../state/store';
 
@@ -13,6 +14,8 @@ export function PlanWeek({ week, onClose }: { week: DateKey; onClose: () => void
   const { state, dispatch } = useStore();
   const today = useToday();
   const [step, setStep] = useState(0);
+  const coach = useCoach();
+  const suggestions = state.reviews[week]?.coachSuggestions ?? [];
   const prev = addDays(week, -7);
   const prevReview = state.reviews[prev] ?? {};
   const stats = weekStats(state, prev, today);
@@ -32,6 +35,11 @@ export function PlanWeek({ week, onClose }: { week: DateKey; onClose: () => void
   const seasonGoals = seasonIds.flatMap((id) => activeGoals.find((g) => g.id === id) ?? []);
   const otherGoals = activeGoals.filter((g) => !seasonIds.includes(g.id));
 
+  const useAsPriority = (title: string) =>
+    setSlots((all) => {
+      const i = all.findIndex((s) => !s.title.trim());
+      return i < 0 ? all : all.map((s, j) => (j === i ? { ...s, title } : s));
+    });
   const patchSlot = (i: number, patch: Partial<WeekPriority>) =>
     setSlots((all) => all.map((s, j) => (j === i ? { ...s, ...patch } : s)));
   const setReflect = (patch: { wins?: string; lessons?: string; nextFocus?: string }) =>
@@ -90,6 +98,26 @@ export function PlanWeek({ week, onClose }: { week: DateKey; onClose: () => void
             <span><small>Highlights</small>{stats.highlightsDone}/{stats.highlightsSet}</span>
             <span><small>Habits</small>{Math.round(stats.habitRate * 100)}%</span>
           </div>
+          {coach.enabled && (
+            <div className="coach-draft stack">
+              <div className="row gap">
+                <button type="button" className="btn" disabled={coach.busy} onClick={() => void coach.weeklySuggestions(week)}>
+                  {coach.busy ? 'Thinking…' : suggestions.length ? 'Draft again' : 'Draft suggestions'}
+                </button>
+                {coach.error && <span role="alert" className="coach-error">{coach.error}</span>}
+              </div>
+              {suggestions.length > 0 && (
+                <ul className="coach-list">
+                  {suggestions.map((s, i) => (
+                    <li key={`${i}-${s.text}`}>
+                      <span>{s.text}</span>
+                      {s.title && <button type="button" className="link-btn" onClick={() => useAsPriority(s.title ?? '')}>Use as priority</button>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           <label>What went well?
             <textarea rows={2} value={prevReview.wins ?? ''} onChange={(e) => setReflect({ wins: e.target.value })} />
           </label>

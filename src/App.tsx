@@ -7,6 +7,7 @@ import { FocusMode } from './views/FocusMode';
 import { GoalsView } from './views/GoalsView';
 import { HabitsView } from './views/HabitsView';
 import { ReviewView } from './views/ReviewView';
+import { SeasonsView } from './views/SeasonsView';
 import { SettingsView } from './views/SettingsView';
 import { TasksView } from './views/TasksView';
 import { TodayView } from './views/TodayView';
@@ -17,6 +18,7 @@ const VIEWS = [
   { id: 'week', label: 'Week' },
   { id: 'tasks', label: 'Tasks' },
   { id: 'goals', label: 'Goals' },
+  { id: 'seasons', label: 'Seasons' },
   { id: 'habits', label: 'Habits' },
   { id: 'review', label: 'Review' },
   { id: 'settings', label: 'Settings' },
@@ -29,6 +31,7 @@ const ICONS: Record<string, string> = {
   week: 'M2.5 4.5h11v8.5h-11zM2.5 7.5h11M5.5 2.5v3M10.5 2.5v3',
   tasks: 'M3 4.5h10M3 8h10M3 11.5h6',
   goals: 'M4 14V2.5M4 3h8l-1.8 3L12 9H4',
+  seasons: 'M2.5 2.5h4.5v4.5h-4.5zM9 2.5h4.5v4.5H9zM2.5 9h4.5v4.5h-4.5zM9 9h4.5v4.5H9z',
   habits: 'M3 8.5l3 3 7-7',
   review: 'M3 13V8M8 13V3.5M13 13V6',
   settings: 'M3 5h10M3 11h10M10 3v4M6 9v4',
@@ -95,7 +98,7 @@ export function App() {
         e.preventDefault();
         if (view !== 'today' && view !== 'tasks') go('today');
         window.setTimeout(() => (quickAddRef.current ?? document.querySelector<HTMLInputElement>('.quick-add input'))?.focus(), 0);
-      } else if (/^[1-7]$/.test(e.key)) {
+      } else if (/^[1-8]$/.test(e.key)) {
         const v = VIEWS[Number(e.key) - 1];
         if (v) go(v.id);
       } else if (e.key === ' ') {
@@ -144,6 +147,7 @@ export function App() {
         {view === 'week' && <WeekView />}
         {view === 'tasks' && <TasksView />}
         {view === 'goals' && <GoalsView />}
+        {view === 'seasons' && <SeasonsView />}
         {view === 'habits' && <HabitsView />}
         {view === 'review' && <ReviewView />}
         {view === 'settings' && <SettingsView />}

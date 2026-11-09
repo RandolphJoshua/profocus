@@ -1,4 +1,5 @@
 import './features.css';
+import './coach.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
@@ -11,6 +12,7 @@ import { SyncProvider } from './state/sync';
 import { TimerProvider } from './state/timer';
 import './styles.css';
 import { CalendarProvider } from './state/calendar';
+import { CoachProvider } from './state/coach';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('#root element missing from index.html');
@@ -30,9 +32,11 @@ createRoot(root).render(
       <AuthProvider>
         <SyncProvider>
           <CalendarProvider>
-            <TimerProvider>
-              <App />
-            </TimerProvider>
+            <CoachProvider>
+              <TimerProvider>
+                <App />
+              </TimerProvider>
+            </CoachProvider>
           </CalendarProvider>
         </SyncProvider>
       </AuthProvider>

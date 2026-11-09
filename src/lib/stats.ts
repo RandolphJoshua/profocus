@@ -324,3 +324,23 @@ export function seasonWeekAlignment(state: AppState, seasonId: ID, uptoWeek: Dat
   }
   return { planned, onSeason };
 }
+
+export type SeasonWeekState = 'planned' | 'unplanned' | 'current' | 'future';
+export interface SeasonWeekCell { index: number; weekStart: DateKey; planned: boolean; state: SeasonWeekState }
+
+/** One cell per week of the season. Week i covers start+7i..+6; its plan lives under startOfWeek of that day. */
+export function seasonWeekStrip(state: AppState, seasonId: ID, today: DateKey): { cells: SeasonWeekCell[]; plannedSoFar: number; elapsed: number } {
+  const season = state.seasons.find((s) => s.id === seasonId);
+  if (!season) return { cells: [], plannedSoFar: 0, elapsed: 0 };
+  const total = Math.max(1, Math.ceil((daysBetween(season.start, season.end) + 1) / 7));
+  const current = today < season.start ? -1 : Math.floor(daysBetween(season.start, today) / 7);
+  const cells: SeasonWeekCell[] = [];
+  for (let i = 0; i < total; i += 1) {
+    const weekStart = startOfWeek(addDays(season.start, i * 7), state.settings.weekStartsOn);
+    const planned = (state.reviews[weekStart]?.priorities?.length ?? 0) > 0;
+    const st: SeasonWeekState = i === current ? 'current' : i > current ? 'future' : planned ? 'planned' : 'unplanned';
+    cells.push({ index: i, weekStart, planned, state: st });
+  }
+  const elapsedCells = cells.filter((c) => c.state !== 'future');
+  return { cells, plannedSoFar: elapsedCells.filter((c) => c.planned).length, elapsed: elapsedCells.length };
+}

@@ -24,7 +24,7 @@
 .focus-sound { align-self: center; }
 
 /* v0.5 seasons: panel on the Goals screen, season form, past seasons. Tokens only. */
-.season-panel { display: flex; flex-direction: column; gap: 4px; margin-bottom: var(--gap); }
+
 .season-name { font-size: 16px; line-height: 24px; font-weight: 600; }
 .season-line { margin: 4px 0 0; }
 .season-track { position: relative; height: 4px; margin: 8px 0 4px; border-radius: 2px; background: var(--rule); }
@@ -48,3 +48,29 @@
 .season-goal-list { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 4px; }
 .season-goal-list li { display: flex; align-items: center; gap: 10px; font-size: var(--fs-body); }
 .season-goal-name.is-done { color: var(--muted); text-decoration: line-through; }
+
+/* v0.6 Seasons screen */
+.seasons-page { display: flex; flex-direction: column; gap: var(--gap); }
+.season-big { display: flex; flex-direction: column; gap: 8px; }
+.season-big .season-name { font-size: 20px; line-height: 28px; font-weight: 600; }
+.season-big p, .season-explainer p { margin: 0; }
+.season-start { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: var(--gap); align-items: start; }
+.season-explainer { display: flex; flex-direction: column; gap: 12px; }
+@media (max-width: 900px) { .season-start { grid-template-columns: minmax(0, 1fr); } }
+.week-strip { display: flex; gap: 4px; margin: 8px 0 0; padding: 0; list-style: none; }
+.week-cell {
+  flex: 1 1 0; min-width: 0; height: 24px; display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; font-size: var(--fs-small); background: var(--panel); color: var(--muted); border: 1px solid var(--rule);
+}
+.week-cell.is-planned { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.week-cell.is-unplanned { background: var(--rule); border-color: var(--rule); }
+.week-cell.is-current { border-color: var(--text); color: var(--text); }
+.week-cell.is-current.is-planned { background: var(--accent); color: var(--surface); }
+@media (max-width: 760px) { .week-cell span { display: none; } }
+.season-goal-list { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 0; padding: 0; list-style: none; }
+.season-goal-list li { display: flex; align-items: center; gap: 10px; }
+.season-add { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+.season-add-field { flex: 1 1 220px; }
+.season-big .season-actions { margin: 8px 0 0; }
+.season-strip-line { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin: 0 0 var(--gap); }
+.season-strip-line .link-btn { padding: 0; }

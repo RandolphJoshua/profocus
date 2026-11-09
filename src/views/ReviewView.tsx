@@ -88,6 +88,15 @@ export function ReviewView() {
         </section>
       )}
 
+      {review.coachSuggestions && review.coachSuggestions.length > 0 && (
+        <section className="panel" aria-label="Coach's suggestions">
+          <h2 className="panel-title">Coach’s suggestions for this week</h2>
+          <ul className="coach-list">
+            {review.coachSuggestions.map((s, i) => <li key={`${i}-${s.text}`}><span>{s.text}</span></li>)}
+          </ul>
+        </section>
+      )}
+
       <div className="review-grid">
         <section className="card">
           <h2 className="card-title">Focus by day</h2>

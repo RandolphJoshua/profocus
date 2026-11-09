@@ -144,37 +144,34 @@ describe('Goals', () => {
 });
 
 describe('Seasons', () => {
-  it('starts a season from Goals and shows it in the panel with its goal under This season', () => {
+  it('shows the explainer and inline form at #seasons, then the 12-week strip once started', () => {
     const initial: AppState = {
       ...emptyState(),
-      goals: [
-        { id: 'g1', title: 'Ship the book', status: 'active', createdAt: '2026-11-01T08:00:00.000Z' },
-        { id: 'g2', title: 'Get fitter', status: 'active', createdAt: '2026-11-01T08:00:00.000Z' },
-      ],
+      goals: [{ id: 'g1', title: 'Ship the book', status: 'active', createdAt: '2026-11-01T08:00:00.000Z' }],
     };
-    mount(initial, 'goals');
-    expect(screen.getByText(/No season running/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Start a season' }));
-    const dialog = screen.getByRole('dialog', { name: 'Start a season' });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Start season' }));
-    expect(within(dialog).getByRole('alert').textContent).toMatch(/name/);
-    fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'Autumn push' } });
-    fireEvent.change(within(dialog).getByLabelText('Theme'), { target: { value: 'Finish the draft' } });
-    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Ship the book' }));
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Start season' }));
+    mount(initial, 'seasons');
+    expect(screen.getByRole('heading', { name: 'Seasons' })).toBeTruthy();
+    expect(screen.getByText('No season running')).toBeTruthy();
+    expect(screen.getByText(/Pick a theme|pick a theme/)).toBeTruthy();
+    expect(screen.getByText('No past seasons yet.')).toBeTruthy();
+    const form = screen.getByRole('region', { name: 'Start a season' });
+    fireEvent.click(within(form).getByRole('button', { name: 'Start season' }));
+    expect(within(form).getByRole('alert').textContent).toMatch(/name/);
+    fireEvent.change(within(form).getByLabelText('Name'), { target: { value: 'Autumn push' } });
+    fireEvent.click(within(form).getByRole('checkbox', { name: 'Ship the book' }));
+    fireEvent.click(within(form).getByRole('button', { name: 'Start season' }));
 
-    const panel = screen.getByRole('region', { name: 'Season' });
-    expect(within(panel).getByText('Autumn push')).toBeTruthy();
-    expect(within(panel).getByText('Finish the draft')).toBeTruthy();
-    expect(within(panel).getByText(/Week 1 of 12 · 83 days left · 0 of 1 goals done/)).toBeTruthy();
-    const mine = screen.getByRole('region', { name: 'This season' });
-    expect(within(mine).getByRole('heading', { name: 'Ship the book' })).toBeTruthy();
-    const later = screen.getByRole('region', { name: 'Later' });
-    expect(within(later).getByRole('heading', { name: 'Get fitter' })).toBeTruthy();
+    expect(screen.getByText('Autumn push · Week 1 of 12')).toBeTruthy();
+    const strip = screen.getByRole('list', { name: 'Weeks of the season' });
+    expect(within(strip).getAllByRole('listitem')).toHaveLength(12);
+    expect(screen.getByText(/0 of 1 week planned so far/)).toBeTruthy();
+    expect(within(screen.getByRole('list', { name: 'Goals in this season' })).getByText('Ship the book')).toBeTruthy();
+  });
 
-    fireEvent.click(within(later).getByRole('button', { name: 'Add to season: Get fitter' }));
-    expect(within(screen.getByRole('region', { name: 'This season' })).getByRole('heading', { name: 'Get fitter' })).toBeTruthy();
-    expect(within(panel).getByText(/0 of 2 goals done/)).toBeTruthy();
+  it('links to the Seasons screen from Goals', () => {
+    mount(emptyState(), 'goals');
+    expect(screen.getByText('No season running')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Start one/ }).getAttribute('href')).toBe('#seasons');
   });
 });
 

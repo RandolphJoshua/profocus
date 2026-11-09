@@ -1,5 +1,5 @@
 import { emptyState } from './storage';
-import { currentSeason, seasonProgress, seasonWeekAlignment, dayScore, focusQuality, goalProgress, goalTrajectory, habitStreak, planDay, plannedStreak, weekScores, weekStats } from './stats';
+import { currentSeason, seasonProgress, seasonWeekStrip, seasonWeekAlignment, dayScore, focusQuality, goalProgress, goalTrajectory, habitStreak, planDay, plannedStreak, weekScores, weekStats } from './stats';
 import type { AppState, Season } from './types';
 
 describe('habitStreak', () => {
@@ -307,5 +307,25 @@ describe('seasonWeekAlignment', () => {
 
   it('is zero for an unknown season', () => {
     expect(seasonWeekAlignment(base(), 'nope', '2026-11-02')).toEqual({ planned: 0, onSeason: 0 });
+  });
+});
+
+describe('seasonWeekStrip', () => {
+  const season: Season = { id: 's', name: 'Autumn', start: '2026-10-05', end: '2026-12-27', goalIds: [], createdAt: '2026-10-05T00:00:00Z' };
+  const pri = [{ id: 'p', title: 'x', done: false }];
+  const base = (): AppState => ({ ...emptyState(), seasons: [season] });
+
+  it('has one cell per week and marks past, current and future weeks', () => {
+    const s: AppState = { ...base(), reviews: { '2026-10-05': { priorities: pri }, '2026-10-19': { priorities: pri }, '2026-11-02': { priorities: pri } } };
+    const { cells, plannedSoFar, elapsed } = seasonWeekStrip(s, 's', '2026-11-04');
+    expect(cells).toHaveLength(12);
+    expect(cells.map((c) => c.state).slice(0, 6)).toEqual(['planned', 'unplanned', 'planned', 'unplanned', 'current', 'future']);
+    expect(plannedSoFar).toBe(3);
+    expect(elapsed).toBe(5);
+  });
+
+  it('is all future before the start and empty for an unknown season', () => {
+    expect(seasonWeekStrip(base(), 's', '2026-09-01').cells.every((c) => c.state === 'future')).toBe(true);
+    expect(seasonWeekStrip(base(), 'nope', '2026-11-04').cells).toEqual([]);
   });
 });

@@ -5,7 +5,8 @@ A personal planner for doing fewer things, better. Built for one person (me), ru
 **Today**: a two-minute *Plan my day* ritual (triage → highlight → block time), the day's tasks, a time-blocked timeline, focus sessions, habits, this week's three priorities, and a shutdown ritual. The greeting line carries the day's one fact, your planned-days streak and today's score.
 **Week**: a 7-day calendar with a *Plan my week* ritual (review last week → pick three priorities linked to goals → protect time for each). Drag tasks onto any day, move and resize blocks.
 **Tasks**: inbox / today / upcoming / overdue, with projects that roll up to goals.
-**Seasons**: a 12-week (or 6/8/16) time box with a theme and the goals that get space; the Goals screen leads with "Week 5 of 12 · 55 days left", goals split into *this season* / *later*, and closing a season asks what it taught you.
+**Seasons**: its own screen. A 12-week (or 6/8/16) time box with a theme and the goals that get space; a week-by-week strip fills in as you plan each week; goals split into *this season* / *later*; closing a season asks what it taught you.
+**AI coach (optional, your own key)**: Settings → AI coach takes a Gemini key (free from Google AI Studio) or any OpenAI-compatible endpoint (Groq, OpenRouter). The key stays in your browser only. On Today, "Coach, read my day" writes a two-sentence note; in Plan my week, "Draft suggestions" proposes three priorities you can accept with one click. The coach sees titles and numbers, never your notes.
 **Goals**: long-term goals with a why and a target date; progress from focus time, tasks done and weeks prioritised, plus a trajectory ("Day 8 of 127 · On track / Adjust / Off track").
 **Focus mode**: one task, an intention line, the timer, optional brown noise, nothing else; rate each session rough / ok / flow (shown as focus quality on Review).
 **Auto-plan**: "Schedule everything" in Plan my day chains your open tasks into the day's free slots; "Add all three" in Plan my week spreads the priorities over the week.
@@ -29,7 +30,7 @@ Draft essay intro 45m tomorrow @9am #writing !high
 | `@9am` `@14:30` | also time-blocks it at that time |
 | `!high` `!med` `!low` | priority |
 
-Keyboard: `N` quick-add, `1`–`7` switch views, `Space` start/pause the timer, `Esc` leaves focus mode.
+Keyboard: `N` quick-add, `1`–`8` switch views, `Space` start/pause the timer, `Esc` leaves focus mode.
 
 Open `/?demo=1` on a fresh browser to see the app filled with sample data.
 

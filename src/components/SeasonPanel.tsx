@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal } from './Modal';
 import { addDays, formatDay, formatDuration } from '../lib/date';
-import { currentSeason, daysBetween, seasonProgress, type SeasonProgress } from '../lib/stats';
+import { daysBetween, seasonProgress, type SeasonProgress } from '../lib/stats';
 import { uid } from '../lib/storage';
 import type { ID, Season } from '../lib/types';
 import { useStore, useToday } from '../state/store';
@@ -17,8 +17,8 @@ export function progressLine(p: SeasonProgress): string {
   return `Week ${p.weekOf} of ${p.weeksTotal} · ${plural(p.daysLeft, 'day')} left · ${p.goalsDone} of ${p.goalsTotal} goals done · ${formatDuration(p.focusMin)} focused · highlight hit ${p.highlightsHit} of ${p.daysElapsed} days`;
 }
 
-/** Create or edit a season. */
-function SeasonForm({ season, onClose }: { season?: Season; onClose: () => void }) {
+/** Create or edit a season. Rendered inline on the Seasons screen and inside a Modal for Edit. */
+export function SeasonFormBody({ season, onDone, onCancel, inline = false }: { season?: Season; onDone: () => void; onCancel?: () => void; inline?: boolean }) {
   const { state, dispatch } = useStore();
   const today = useToday();
   const [name, setName] = useState(season?.name ?? '');
@@ -39,12 +39,11 @@ function SeasonForm({ season, onClose }: { season?: Season; onClose: () => void 
     const fields = { name: name.trim(), theme: theme.trim() || undefined, start, end, goalIds: picked };
     if (season) dispatch({ type: 'UPDATE_SEASON', id: season.id, patch: fields });
     else dispatch({ type: 'ADD_SEASON', season: { id: uid('se-'), ...fields, createdAt: new Date().toISOString() } });
-    onClose();
+    onDone();
   };
 
   return (
-    <Modal title={season ? 'Edit season' : 'Start a season'} onClose={onClose}>
-      <form className="stack" onSubmit={(e) => { e.preventDefault(); save(); }}>
+      <form className={inline ? 'stack season-form' : 'stack'} onSubmit={(e) => { e.preventDefault(); save(); }}>
         <label>Name<input value={name} onChange={(e) => setName(e.target.value)} placeholder="Autumn push" /></label>
         <label>Theme<input value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="One line: what this season is about" /></label>
         <div className="season-dates">
@@ -68,15 +67,22 @@ function SeasonForm({ season, onClose }: { season?: Season; onClose: () => void 
         {error && <p role="alert" className="form-error">{error}</p>}
         <div className="row gap ritual-foot">
           <span className="spacer" />
-          <button type="button" className="btn" onClick={onClose}>Cancel</button>
+          {onCancel && <button type="button" className="btn" onClick={onCancel}>Cancel</button>}
           <button type="submit" className="btn primary">{season ? 'Save' : 'Start season'}</button>
         </div>
       </form>
+  );
+}
+
+export function SeasonForm({ season, onClose }: { season?: Season; onClose: () => void }) {
+  return (
+    <Modal title={season ? 'Edit season' : 'Start a season'} onClose={onClose}>
+      <SeasonFormBody season={season} onDone={onClose} onCancel={onClose} />
     </Modal>
   );
 }
 
-function CloseSeason({ season, onClose }: { season: Season; onClose: () => void }) {
+export function CloseSeason({ season, onClose }: { season: Season; onClose: () => void }) {
   const { state, dispatch } = useStore();
   const today = useToday();
   const [note, setNote] = useState(season.reviewNote ?? '');
@@ -103,54 +109,17 @@ function CloseSeason({ season, onClose }: { season: Season; onClose: () => void 
   );
 }
 
-/** The season at the top of the Goals screen: what is running now, or an invitation to start one. */
-export function SeasonPanel() {
-  const { state } = useStore();
-  const today = useToday();
-  const [dialog, setDialog] = useState<'new' | 'edit' | 'close' | null>(null);
-  const season = currentSeason(state.seasons, today);
-  const p = season ? seasonProgress(state, season.id, today) : undefined;
-  const total = season ? daysBetween(season.start, season.end) + 1 : 1;
-
-  return (
-    <section className="panel season-panel" aria-label="Season">
-      {season && p ? (
-        <>
-          <h2 className="season-name">{season.name}</h2>
-          {season.theme && <p className="muted">{season.theme}</p>}
-          <p className="season-line num">{progressLine(p)}</p>
-          <div className="season-track" role="img" aria-label={`${Math.round((p.daysElapsed / total) * 100)}% of the season has passed`}>
-            <span className="season-fill" style={{ width: `${(p.daysElapsed / total) * 100}%` }} />
-          </div>
-          <div className="season-actions">
-            <button type="button" className="btn ghost" onClick={() => setDialog('edit')}>Edit</button>
-            <button type="button" className="btn ghost" onClick={() => setDialog('close')}>Close season</button>
-          </div>
-        </>
-      ) : (
-        <div className="season-empty">
-          <p className="muted">No season running. A season is 12 weeks with a theme and the goals that get the space.</p>
-          <button type="button" className="btn" onClick={() => setDialog('new')}>Start a season</button>
-        </div>
-      )}
-      {dialog === 'new' && <SeasonForm onClose={() => setDialog(null)} />}
-      {dialog === 'edit' && season && <SeasonForm season={season} onClose={() => setDialog(null)} />}
-      {dialog === 'close' && season && <CloseSeason season={season} onClose={() => setDialog(null)} />}
-    </section>
-  );
-}
-
-/** Closed or finished seasons, collapsed by default. */
+/** Closed or finished seasons, always visible on the Seasons screen. */
 export function PastSeasons() {
   const { state } = useStore();
   const today = useToday();
-  const [open, setOpen] = useState(false);
   const past = state.seasons.filter((s) => s.closedAt || s.end < today).sort((a, b) => b.start.localeCompare(a.start));
-  if (past.length === 0) return null;
   return (
     <section className="past-seasons" aria-label="Past seasons">
-      <button type="button" className="link-btn" aria-expanded={open} onClick={() => setOpen(!open)}>Past seasons ({past.length})</button>
-      {open && (
+      <h2 className="goal-group">Past seasons</h2>
+      {past.length === 0 ? (
+        <p className="muted">No past seasons yet.</p>
+      ) : (
         <ul className="past-list">
           {past.map((s) => {
             const p = seasonProgress(state, s.id, today);

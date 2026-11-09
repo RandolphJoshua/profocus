@@ -105,6 +105,8 @@ export interface DayPlan {
   plannedAt?: string;
   /** Focus-mode sentence: "I will … by …". */
   intention?: string;
+  /** AI coach note for the day (generated on request). */
+  coachNote?: { text: string; at: string };
 }
 
 export interface WeekPriority {
@@ -121,6 +123,8 @@ export interface WeeklyReview {
   wins?: string;
   lessons?: string;
   nextFocus?: string;
+  /** AI coach suggestions for the week (generated on request). */
+  coachSuggestions?: { text: string; title?: string }[];
 }
 
 export type Theme = 'system' | 'light' | 'dark';

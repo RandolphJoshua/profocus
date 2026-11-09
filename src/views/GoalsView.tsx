@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { PastSeasons, SeasonPanel } from '../components/SeasonPanel';
 import { formatDuration } from '../lib/date';
-import { currentSeason, goalProgress, goalTrajectory, type Trajectory } from '../lib/stats';
+import { currentSeason, goalProgress, goalTrajectory, seasonProgress, type Trajectory } from '../lib/stats';
 import { uid } from '../lib/storage';
 import type { Goal, Season } from '../lib/types';
 import { useStore, useToday } from '../state/store';
@@ -88,6 +87,7 @@ export function GoalsView() {
   const active = state.goals.filter((g) => g.status !== 'done').length;
   const done = state.goals.length - active;
   const season = currentSeason(state.seasons, today);
+  const sp = season ? seasonProgress(state, season.id, today) : undefined;
   const inSeason = (season?.goalIds ?? []).flatMap((id) => state.goals.find((g) => g.id === id) ?? []);
   const later = state.goals
     .filter((g) => !season?.goalIds.includes(g.id))
@@ -111,7 +111,19 @@ export function GoalsView() {
         <p className="sub num">{active} active · {done} done</p>
       </header>
 
-      <SeasonPanel />
+      <p className="season-strip-line">
+        {season && sp ? (
+          <>
+            <span className="num">{season.name} · Week {sp.weekOf} of {sp.weeksTotal} · {plural(sp.daysLeft, 'day')} left</span>
+            <a className="link-btn" href="#seasons">Open season →</a>
+          </>
+        ) : (
+          <>
+            <span className="muted">No season running</span>
+            <a className="link-btn" href="#seasons">Start one →</a>
+          </>
+        )}
+      </p>
 
       <form className="goal-form" onSubmit={(e) => { e.preventDefault(); add(); }}>
         <label>Goal<input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Finish the book draft" /></label>
@@ -136,8 +148,6 @@ export function GoalsView() {
           {state.goals.length === 0 && <li className="empty">No goals yet. Name one thing worth a few months of attention.</li>}
         </ul>
       </section>
-
-      <PastSeasons />
     </div>
   );
 }

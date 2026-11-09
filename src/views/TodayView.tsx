@@ -1,4 +1,5 @@
 import { useState, type CSSProperties, type Ref } from 'react';
+import { CoachNote } from '../components/CoachNote';
 import { BlockEditor, newDraft, type BlockDraft } from '../components/BlockEditor';
 import { DayColumn, TimeGutter } from '../components/DayColumn';
 import { FocusTimer } from '../components/FocusTimer';
@@ -73,6 +74,8 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
           {plan.plannedAt ? 'Re-plan' : 'Plan my day'}
         </button>
       </header>
+
+      <CoachNote />
 
       <div className="tiles">
         <div className="tile"><span className="tile-label">Open tasks</span><span className="tile-value num">{open.length}</span><span className="tile-cap num">{done.length} done today</span></div>

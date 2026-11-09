@@ -3,7 +3,9 @@ import { todayKey } from '../lib/date';
 import { emptyState, normalizeState } from '../lib/storage';
 import type { Settings, Theme } from '../lib/types';
 import { useAuth } from '../state/auth';
+import { DEFAULT_MODELS, type AiConfig, type Provider } from '../lib/ai';
 import { useCalendar } from '../state/calendar';
+import { useCoach } from '../state/coach';
 import { useStore } from '../state/store';
 import { useSync } from '../state/sync';
 
@@ -100,6 +102,84 @@ function AccountSection() {
   );
 }
 
+function CoachSection() {
+  const coach = useCoach();
+  const saved = coach.config;
+  const [provider, setProvider] = useState<Provider>(saved?.provider ?? 'gemini');
+  const [apiKey, setApiKey] = useState(saved?.apiKey ?? '');
+  const [model, setModel] = useState(saved?.model ?? DEFAULT_MODELS[saved?.provider ?? 'gemini']);
+  const [baseUrl, setBaseUrl] = useState(saved?.baseUrl ?? '');
+  const [note, setNote] = useState('');
+  const [failed, setFailed] = useState(false);
+  const draft = (): AiConfig => ({ provider, apiKey: apiKey.trim(), model: model.trim() || DEFAULT_MODELS[provider], ...(provider === 'openai-compatible' && baseUrl.trim() ? { baseUrl: baseUrl.trim() } : {}) });
+  const save = () => {
+    if (!apiKey.trim()) { setFailed(true); setNote('Paste an API key first.'); return false; }
+    coach.setConfig(draft());
+    setFailed(false);
+    setNote('Saved in this browser.');
+    return true;
+  };
+  return (
+    <section className="setting">
+      <div>
+        <h2 className="panel-title">AI coach</h2>
+        <p className="muted">Optional. A daily note and weekly suggestions, from a model you choose.</p>
+      </div>
+      <div className="setting-body stack">
+        <form className="stack" autoComplete="off" onSubmit={(e) => { e.preventDefault(); save(); }}>
+          <label>Provider
+            <select
+              value={provider}
+              onChange={(e) => {
+                const next = e.target.value as Provider;
+                if (model === DEFAULT_MODELS[provider]) setModel(DEFAULT_MODELS[next]);
+                setProvider(next);
+              }}
+            >
+              <option value="gemini">Gemini</option>
+              <option value="openai-compatible">OpenAI-compatible</option>
+            </select>
+          </label>
+          <label>API key
+            <input type="password" autoComplete="off" spellCheck={false} value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
+          </label>
+          <p className="hint">Stays in this browser. Never synced.</p>
+          <label>Model
+            <input value={model} onChange={(e) => setModel(e.target.value)} placeholder={DEFAULT_MODELS[provider]} />
+          </label>
+          {provider === 'openai-compatible' && (
+            <label>Base URL
+              <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://api.groq.com/openai/v1" />
+            </label>
+          )}
+          <div className="row gap">
+            <button type="submit" className="btn">Save</button>
+            <button
+              type="button"
+              className="link-btn"
+              disabled={coach.busy}
+              onClick={async () => {
+                if (!save()) return;
+                const out = await coach.test();
+                setFailed(!out);
+                setNote(out ? 'OK — connected' : '');
+              }}
+            >{coach.busy ? 'Testing…' : 'Test'}</button>
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => { coach.setConfig(null); setApiKey(''); setFailed(false); setNote('Key removed.'); }}
+            >Remove key</button>
+          </div>
+          {note && <p role="status" className={failed ? 'sync-error' : 'muted'}>{note}</p>}
+          {failed && coach.error && <p role="alert" className="sync-error">{coach.error}</p>}
+        </form>
+        <p className="hint">Free options: Google AI Studio (Gemini) · Groq · OpenRouter free models. The coach sees your goal, priority and task titles plus this week’s numbers — never your notes.</p>
+      </div>
+    </section>
+  );
+}
+
 export function SettingsView() {
   const { state, dispatch } = useStore();
   const s = state.settings;
@@ -176,6 +256,8 @@ export function SettingsView() {
         </div>
       </section>
 
+      <CoachSection />
+
       <section className="setting">
         <div>
           <h2 className="panel-title">Your data</h2>
@@ -229,7 +311,7 @@ export function SettingsView() {
         <div className="setting-body stack">
         <dl className="shortcuts">
           <dt><kbd>N</kbd></dt><dd>Quick-add a task</dd>
-          <dt><kbd>1</kbd>–<kbd>7</kbd></dt><dd>Switch view</dd>
+          <dt><kbd>1</kbd>–<kbd>8</kbd></dt><dd>Switch view: Today, Week, Tasks, Goals, Seasons, Habits, Review, Settings</dd>
           <dt><kbd>Space</kbd></dt><dd>Start / pause the focus timer</dd>
         </dl>
         <h3 className="card-title">Quick-add syntax</h3>

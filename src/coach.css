@@ -1,0 +1,14 @@
+/* AI coach: quiet, tokens only. */
+.coach-note { margin: 0 0 var(--gap); max-width: 720px; }
+.coach-text { margin: 0; font-size: var(--fs-body); line-height: 1.5; color: var(--text); }
+.coach-meta { margin: 6px 0 0; font-size: var(--fs-small); color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.coach-meta .link-btn { padding: 0; font-size: var(--fs-small); }
+.coach-error { margin: 8px 0 0; font-size: var(--fs-small); color: var(--negative); }
+.coach-draft { padding-bottom: 4px; }
+.coach-draft .coach-error { margin: 0; }
+.coach-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.coach-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--rule); font-size: var(--fs-body); }
+.coach-list li:first-child { border-top: 0; }
+.coach-list .link-btn { flex: none; padding: 0; }
+.link-btn:disabled, .btn:disabled { opacity: 0.5; cursor: default; }
+@media (max-width: 600px) { .coach-list li { flex-direction: column; gap: 4px; } }

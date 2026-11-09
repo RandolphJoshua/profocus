@@ -21,8 +21,8 @@ describe('focusStatusParams', () => {
     expect(p.get('token')).toBe('xoxp-abc');
     expect(profileOf(p)).toEqual({ status_text: 'Focusing', status_emoji: ':headphones:', status_expiration: 1_700_000_000 + 1500 });
   });
-  it('adds the task title only when withTask is on', () => {
-    expect(profileOf(focusStatusParams({ ...cfg, withTask: true }, { minutes: 5, taskTitle: 'Write', nowMs })).status_text).toBe('Focusing · Write');
+  it('uses just the task title when withTask is on, with no prefix', () => {
+    expect(profileOf(focusStatusParams({ ...cfg, withTask: true }, { minutes: 5, taskTitle: 'Write', nowMs })).status_text).toBe('Write');
     expect(profileOf(focusStatusParams({ ...cfg, withTask: true }, { minutes: 5, nowMs })).status_text).toBe('Focusing');
   });
   it('cuts the text to 100 characters', () => {

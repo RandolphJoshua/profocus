@@ -64,9 +64,8 @@ interface FocusInfo {
 
 export function focusStatusParams(cfg: SlackConfig, { minutes, taskTitle, nowMs }: FocusInfo): URLSearchParams {
   const title = taskTitle?.trim();
-  // With "Add the task name" on and an empty status text, the status is exactly the task title.
-  const parts = [cfg.text.trim(), cfg.withTask ? title : undefined].filter(Boolean);
-  const text = (parts.length ? parts.join(' · ') : DEFAULT_SLACK.text).slice(0, STATUS_MAX);
+  // With "Use the task name" on, the status is exactly the task title; the status text is only the fallback.
+  const text = ((cfg.withTask && title) || cfg.text.trim() || DEFAULT_SLACK.text).slice(0, STATUS_MAX);
   const profile = { status_text: text, status_emoji: cfg.emoji, status_expiration: Math.floor(nowMs / 1000) + minutes * SECONDS_PER_MINUTE };
   return new URLSearchParams({ token: cfg.token, profile: JSON.stringify(profile) });
 }

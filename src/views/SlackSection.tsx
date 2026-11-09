@@ -16,7 +16,7 @@ export function SlackSection() {
   const syncError = useSlackError();
 
   const say = (message: string, isError: boolean) => { setNote(message); setFailed(isError); };
-  const draft = (): SlackConfig => ({ token: token.trim(), text: withTask ? text.trim() : text.trim() || DEFAULT_SLACK.text, emoji: emoji.trim() || DEFAULT_SLACK.emoji, withTask, dnd });
+  const draft = (): SlackConfig => ({ token: token.trim(), text: text.trim() || DEFAULT_SLACK.text, emoji: emoji.trim() || DEFAULT_SLACK.emoji, withTask, dnd });
   const save = (): SlackConfig | null => {
     const problem = validateToken(token);
     if (problem) { say(problem, true); return null; }
@@ -50,15 +50,15 @@ export function SlackSection() {
             <input type="password" autoComplete="off" spellCheck={false} value={token} onChange={(e) => setToken(e.target.value)} />
           </label>
           <p className="hint">Stays in this browser. Never synced.</p>
-          <label>Status text
+          <label>Status when no task is picked
             <input value={text} onChange={(e) => setText(e.target.value)} />
           </label>
           <label>Status emoji
             <input value={emoji} onChange={(e) => setEmoji(e.target.value)} />
             <span className="hint">Slack emoji code, e.g. :headphones:</span>
           </label>
-          <label className="row gap check-label"><input type="checkbox" checked={withTask} onChange={(e) => setWithTask(e.target.checked)} /> Add the task name</label>
-          <p className="hint">Your whole workspace sees it. Leave Status text empty to show only the task name.</p>
+          <label className="row gap check-label"><input type="checkbox" checked={withTask} onChange={(e) => setWithTask(e.target.checked)} /> Use the task name as the status</label>
+          <p className="hint">Your whole workspace sees it, e.g. "Finish chapter 3 outline".</p>
           <label className="row gap check-label"><input type="checkbox" checked={dnd} onChange={(e) => setDnd(e.target.checked)} /> Pause notifications while focusing (Do Not Disturb)</label>
           <div className="row gap">
             <button type="submit" className="btn">Save</button>

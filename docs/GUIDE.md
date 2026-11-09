@@ -79,6 +79,17 @@ After that, each new item on the board becomes a task in your inbox (no date) ev
 
 The token stays in this browser. Starting a focus session sets your status (and Do Not Disturb if enabled); stopping clears it. Some workspaces need an admin to approve new apps.
 
+## Plan with AI
+
+With the AI coach set up (Settings), **Plan with AI** on Today and Week, or Ctrl/Cmd K, turns a sentence into tasks and time blocks. Type what you want, press Generate (or Ctrl/Cmd Enter), untick anything you don't want, then Apply. Nothing changes until you apply, and the toast has Undo.
+
+- "Plan my afternoon: 2h on the WABA fix, lunch at 12:30, gym at 6"
+- "Break 'Update franchisee check in site' into tasks and schedule them tomorrow morning"
+- "Schedule my inbox for tomorrow, high priority first"
+- "Add: call Tom about the Excel mapping, 15m, high"
+
+It plans around the blocks you already have, including Google Calendar events, and stays inside your working day. It sees task titles, estimates and block times, never notes. In the palette, type a request and choose "Ask AI: ..." to generate at once.
+
 ## Keys
 
 | Key | Does |

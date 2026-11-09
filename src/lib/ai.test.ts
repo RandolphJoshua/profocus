@@ -227,3 +227,24 @@ describe('buildContext', () => {
     expect(SYSTEM_PROMPT).toMatch(/suggestions/);
   });
 });
+
+describe('complete options (plan calls)', () => {
+  beforeEach(() => { sdk.create.mockReset(); });
+
+  it('passes maxTokens and effort to Anthropic', async () => {
+    sdk.create.mockResolvedValue({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'ok' }] });
+    await complete(claude, 's', 'u', { maxTokens: 4096, effort: 'medium' });
+    expect(sdk.create).toHaveBeenCalledWith(expect.objectContaining({ max_tokens: 4096, output_config: { effort: 'medium' } }));
+  });
+
+  it('maps maxTokens to Gemini and OpenAI-compatible fields', async () => {
+    const g = vi.fn(() => okJson({ candidates: [{ content: { parts: [{ text: 'x' }] } }] }));
+    vi.stubGlobal('fetch', g);
+    await complete(gemini, 's', 'u', { json: true, maxTokens: 4096 });
+    expect(JSON.parse((g.mock.calls[0] as unknown as [string, RequestInit])[1].body as string).generationConfig).toMatchObject({ maxOutputTokens: 4096 });
+    const o = vi.fn(() => okJson({ choices: [{ message: { content: 'x' } }] }));
+    vi.stubGlobal('fetch', o);
+    await complete(compat, 's', 'u', { json: true, maxTokens: 4096 });
+    expect(JSON.parse((o.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)).toMatchObject({ max_tokens: 4096, response_format: { type: 'json_object' } });
+  });
+});

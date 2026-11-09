@@ -6,6 +6,7 @@ import { PlanDay } from './components/PlanDay';
 import { PlanWeek } from './components/PlanWeek';
 import { ToastProvider, useToast } from './components/Toaster';
 import { startOfWeek } from './lib/date';
+import { AiPlanProvider, useAiPlan } from './state/aiPlan';
 import { useMondaySync } from './state/mondaySync';
 import { useSlackFocusSync } from './state/slackFocus';
 import { useStore, useToday } from './state/store';
@@ -76,7 +77,9 @@ function withViewTransition(change: () => void) {
 export function App() {
   return (
     <ToastProvider>
-      <AppShell />
+      <AiPlanProvider>
+        <AppShell />
+      </AiPlanProvider>
     </ToastProvider>
   );
 }
@@ -85,6 +88,7 @@ function AppShell() {
   const { state, dispatch } = useStore();
   const today = useToday();
   const toast = useToast();
+  const aiPlan = useAiPlan();
   const timer = useTimer();
   const sync = useSync();
   useSlackFocusSync();
@@ -173,9 +177,9 @@ function AppShell() {
     const ids = new Set(state.blocks.map((b) => b.id));
     const removed = before.filter((b) => !ids.has(b.id));
     const [block] = removed;
-    if (removed.length !== 1 || !block || block.source === 'google') return;
+    if (removed.length !== 1 || !block || block.source === 'google' || aiPlan.isBlockToastMuted(block.id)) return;
     toast('Block removed', { action: { label: 'Undo', run: () => dispatch({ type: 'ADD_BLOCK', block }) } });
-  }, [state.blocks, toast, dispatch]);
+  }, [state.blocks, toast, dispatch, aiPlan]);
 
   const openRitual = (kind: 'day' | 'week') => {
     if (kind === 'day' && view !== 'today') go('today');

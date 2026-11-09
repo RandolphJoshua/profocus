@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseQuickAdd } from '../lib/parse';
 import { quickAddActions } from '../state/reducer';
+import { useAiPlan } from '../state/aiPlan';
+import { useCoach } from '../state/coach';
 import { useStore, useToday } from '../state/store';
 import { useTimer } from '../state/timer';
 import { useToast } from './Toaster';
@@ -27,6 +29,8 @@ export function CommandPalette({ views, onGo, onRitual, onClose }: CommandPalett
   const timer = useTimer();
   const today = useToday();
   const toast = useToast();
+  const { enabled: aiEnabled } = useCoach();
+  const aiPlan = useAiPlan();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [query, setQuery] = useState('');
@@ -49,6 +53,7 @@ export function CommandPalette({ views, onGo, onRitual, onClose }: CommandPalett
       ...views.map((v) => ({ id: `go-${v.id}`, label: `Go to ${v.label}`, run: () => onGo(v.id) })),
       { id: 'plan-day', label: 'Plan my day', run: () => onRitual('day') },
       { id: 'plan-week', label: 'Plan my week', run: () => onRitual('week') },
+      { id: 'plan-ai', label: 'Plan with AI', run: () => aiPlan.open() },
       { id: 'start-focus', label: 'Start focus', run: () => startFocus() },
     ].filter((c) => c.label.toLowerCase().includes(needle));
     if (!text) return commands;
@@ -67,8 +72,9 @@ export function CommandPalette({ views, onGo, onRitual, onClose }: CommandPalett
         toast(`Added “${parsed.title}”`);
       },
     };
-    return [...commands, ...tasks, add];
-  }, [query, views, onGo, onRitual, state, timer, today, dispatch, toast]);
+    const ask: Command[] = aiEnabled ? [{ id: 'ask-ai', label: `Ask AI: ${text}`, run: () => aiPlan.open({ prompt: text, run: true }) }] : [];
+    return [...commands, ...ask, ...tasks, add];
+  }, [query, views, onGo, onRitual, state, timer, today, dispatch, toast, aiEnabled, aiPlan]);
 
   const current = Math.min(active, Math.max(items.length - 1, 0));
   const activeId = items[current] ? `palette-opt-${items[current].id}` : undefined;

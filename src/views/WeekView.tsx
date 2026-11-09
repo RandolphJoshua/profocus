@@ -6,6 +6,8 @@ import { DayColumn, TimeGutter } from '../components/DayColumn';
 import { addDays, formatDay, formatDuration, minutesNow, shortWeekday, startOfWeek, weekDays } from '../lib/date';
 import { focusMinutesOn } from '../lib/stats';
 import { useCalendarLine } from '../state/calendarStatus';
+import { useAiPlan } from '../state/aiPlan';
+import { useCoach } from '../state/coach';
 import { useStore, useToday } from '../state/store';
 import { byPriority } from './TodayView';
 
@@ -14,6 +16,8 @@ const HOUR = 72;
 
 export function WeekView() {
   const { state } = useStore();
+  const { enabled: aiEnabled } = useCoach();
+  const aiPlan = useAiPlan();
   const calendarLine = useCalendarLine();
   const today = useToday();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today, state.settings.weekStartsOn));
@@ -65,9 +69,12 @@ export function WeekView() {
             </div>
           )}
         </div>
-        <button type="button" className="btn primary" onClick={() => setPlanning(true)}>
-          {state.reviews[weekStart]?.plannedAt ? 'Re-plan' : 'Plan my week'}
-        </button>
+        <div className="row gap">
+          {aiEnabled && <button type="button" className="btn ai-plan-btn" onClick={() => aiPlan.open()}>Plan with AI</button>}
+          <button type="button" className="btn primary" onClick={() => setPlanning(true)}>
+            {state.reviews[weekStart]?.plannedAt ? 'Re-plan' : 'Plan my week'}
+          </button>
+        </div>
       </header>
 
       <div className="week-layout">

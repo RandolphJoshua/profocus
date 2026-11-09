@@ -117,18 +117,31 @@ function endpoint(cfg: AiConfig): { url: string; headers: Record<string, string>
   return { url: `${base}/chat/completions`, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` } };
 }
 
-function requestBody(cfg: AiConfig, system: string, user: string, json: boolean): unknown {
+export interface CompleteOpts {
+  json?: boolean;
+  /** Output token cap. Default 1024. */
+  maxTokens?: number;
+  /** Anthropic only. Default 'low'. */
+  effort?: 'low' | 'medium' | 'high';
+  /** Request time limit in ms. Default 20 s; a full plan needs longer. */
+  timeoutMs?: number;
+}
+
+const DEFAULT_MAX_TOKENS = 1024;
+
+function requestBody(cfg: AiConfig, system: string, user: string, json: boolean, maxTokens?: number): unknown {
   if (cfg.provider === 'gemini') {
     return {
       system_instruction: { parts: [{ text: system }] },
       contents: [{ role: 'user', parts: [{ text: user }] }],
-      generationConfig: { temperature: TEMPERATURE, ...(json ? { response_mime_type: 'application/json' } : {}) },
+      generationConfig: { temperature: TEMPERATURE, ...(maxTokens ? { maxOutputTokens: maxTokens } : {}), ...(json ? { response_mime_type: 'application/json' } : {}) },
     };
   }
   return {
     model: cfg.model,
     messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
     temperature: TEMPERATURE,
+    ...(maxTokens ? { max_tokens: maxTokens } : {}),
     ...(json ? { response_format: { type: 'json_object' } } : {}),
   };
 }
@@ -143,16 +156,16 @@ function readText(cfg: AiConfig, data: unknown): string | undefined {
 }
 
 /** Official SDK, loaded on demand so other providers never download it. JSON mode needs no extra param: the system prompt asks for JSON and parseSuggestions is tolerant. */
-async function completeAnthropic(cfg: AiConfig, system: string, user: string): Promise<string> {
+async function completeAnthropic(cfg: AiConfig, system: string, user: string, opts: CompleteOpts): Promise<string> {
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
-  const client = new Anthropic({ apiKey: cfg.apiKey, dangerouslyAllowBrowser: true, timeout: TIMEOUT_MS, maxRetries: 1 });
+  const client = new Anthropic({ apiKey: cfg.apiKey, dangerouslyAllowBrowser: true, timeout: opts.timeoutMs ?? TIMEOUT_MS, maxRetries: 1 });
   try {
     const res = await client.beta.messages.create({
       model: cfg.model,
-      max_tokens: 1024, // notes and a 3-item JSON list are deliberately short
+      max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS, // notes and a 3-item JSON list are deliberately short
       system,
       messages: [{ role: 'user', content: user }],
-      output_config: { effort: 'low' }, // Opus 5.5 defaults to medium; low is right for a two-sentence note
+      output_config: { effort: opts.effort ?? 'low' }, // Opus 5.5 defaults to medium; low is right for a two-sentence note
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default', // if a safety classifier declines, the API re-runs on a fallback model in the same call
     });
@@ -168,19 +181,20 @@ async function completeAnthropic(cfg: AiConfig, system: string, user: string): P
   }
 }
 
-export async function complete(cfg: AiConfig, system: string, user: string, opts: { json?: boolean } = {}): Promise<string> {
-  if (cfg.provider === 'anthropic') return completeAnthropic(cfg, system, user);
+export async function complete(cfg: AiConfig, system: string, user: string, opts: CompleteOpts = {}): Promise<string> {
+  if (cfg.provider === 'anthropic') return completeAnthropic(cfg, system, user, opts);
   const { url, headers } = endpoint(cfg);
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const limit = opts.timeoutMs ?? TIMEOUT_MS;
+  const timer = setTimeout(() => controller.abort(), limit);
   try {
-    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(requestBody(cfg, system, user, !!opts.json)), signal: controller.signal });
+    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(requestBody(cfg, system, user, !!opts.json, opts.maxTokens)), signal: controller.signal });
     if (!res.ok) throw new Error(await providerError(res));
     const text = readText(cfg, await res.json());
     if (!text) throw new Error('The model returned an empty answer.');
     return text.trim();
   } catch (e) {
-    if (e instanceof DOMException && e.name === 'AbortError') throw new Error('The request timed out after 20 seconds.');
+    if (e instanceof DOMException && e.name === 'AbortError') throw new Error(`The request timed out after ${Math.round(limit / 1000)} seconds.`);
     throw e;
   } finally {
     clearTimeout(timer);

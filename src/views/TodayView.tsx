@@ -12,6 +12,8 @@ import { WeekPriorities } from '../components/WeekPriorities';
 import { addDays, formatDay, formatDuration, startOfWeek } from '../lib/date';
 import { currentSeason, dayScore, focusMinutesOn, habitStreak, plannedStreak, seasonProgress } from '../lib/stats';
 import type { DayPlan, Task } from '../lib/types';
+import { useAiPlan } from '../state/aiPlan';
+import { useCoach } from '../state/coach';
 import { useStore, useToday } from '../state/store';
 
 const PRIO_RANK = { high: 0, med: 1, low: 2 } as const;
@@ -26,6 +28,8 @@ function greeting(h: number) {
 
 export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> }) {
   const { state, dispatch } = useStore();
+  const { enabled: aiEnabled } = useCoach();
+  const aiPlan = useAiPlan();
   const today = useToday();
   const [draft, setDraft] = useState<BlockDraft | null>(null);
   const [showDone, setShowDone] = useState(false);
@@ -95,9 +99,12 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
           <h1 className="greeting">{greeting(new Date().getHours())}.</h1>
           <p className="sub num">{fact}</p>
         </div>
-        <button type="button" className={plan.plannedAt ? 'btn ghost' : 'btn primary'} onClick={() => setPlanning(true)}>
-          {plan.plannedAt ? 'Re-plan' : 'Plan my day'}
-        </button>
+        <div className="row gap">
+          {aiEnabled && <button type="button" className="btn ai-plan-btn" onClick={() => aiPlan.open()}>Plan with AI</button>}
+          <button type="button" className={plan.plannedAt ? 'btn ghost' : 'btn primary'} onClick={() => setPlanning(true)}>
+            {plan.plannedAt ? 'Re-plan' : 'Plan my day'}
+          </button>
+        </div>
       </header>
 
       <CoachNote />

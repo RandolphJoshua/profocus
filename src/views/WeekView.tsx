@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PlanWeek } from '../components/PlanWeek';
 import { WeekPriorities } from '../components/WeekPriorities';
 import { BlockEditor, newDraft, type BlockDraft } from '../components/BlockEditor';
 import { DayColumn, TimeGutter } from '../components/DayColumn';
-import { addDays, formatDay, formatDuration, shortWeekday, startOfWeek, weekDays } from '../lib/date';
+import { addDays, formatDay, formatDuration, minutesNow, shortWeekday, startOfWeek, weekDays } from '../lib/date';
 import { focusMinutesOn } from '../lib/stats';
 import { useCalendarLine } from '../state/calendarStatus';
 import { useStore, useToday } from '../state/store';
 import { byPriority } from './TodayView';
 
-const HOUR = 48;
+/** Pixels per hour on the week grid: tall enough that a 30-minute block shows its title and time. */
+const HOUR = 72;
 
 export function WeekView() {
   const { state } = useStore();
@@ -27,6 +28,20 @@ export function WeekView() {
     .sort(byPriority);
 
   const weekFocus = days.reduce((n, d) => n + focusMinutesOn(state.sessions, d), 0);
+
+  // Open the grid scrolled to an hour before now (this week) or to the start of the day.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isThisWeek = days.includes(today);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { dayStartHour, dayEndHour } = state.settings;
+    const now = minutesNow();
+    const target = isThisWeek && now > dayStartHour * 60 && now < dayEndHour * 60 ? Math.floor(now / 60 - 1) * 60 - dayStartHour * 60 : 0;
+    el.scrollTop = Math.max(0, (target / 60) * HOUR);
+    // Only when the shown week changes, not on every state update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStart]);
 
   return (
     <div className="week">
@@ -55,9 +70,9 @@ export function WeekView() {
         </button>
       </header>
 
-      {(state.reviews[weekStart]?.priorities?.length ?? 0) > 0 && <WeekPriorities week={weekStart} />}
-
       <div className="week-layout">
+        <div className="week-side">
+        {(state.reviews[weekStart]?.priorities?.length ?? 0) > 0 && <WeekPriorities week={weekStart} />}
         <aside className="card week-tray">
           <h2 className="card-title">To schedule</h2>
           <p className="hint">Drag onto a day to time-block it.</p>
@@ -83,9 +98,10 @@ export function WeekView() {
             {toSchedule.length === 0 && <li className="empty">All caught up.</li>}
           </ul>
         </aside>
+        </div>
 
         <div className="card week-cal">
-          <div className="week-scroll">
+          <div className="week-scroll" ref={scrollRef}>
             <div className="week-head">
               <span />
               {days.map((d) => {

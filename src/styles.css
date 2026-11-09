@@ -313,15 +313,17 @@ kbd { font: 400 var(--fs-small)/16px var(--font); border: 1px solid var(--contro
 .drop-line span { position: absolute; right: 6px; top: -20px; font-size: var(--fs-small); background: var(--primary); color: var(--primary-ink); padding: 0 6px; border-radius: 4px; }
 
 /* week */
-.week-layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: var(--gap); align-items: start; }
-.week-tray { position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow: auto; }
+.week-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: var(--gap); align-items: start; }
+.week-side { position: sticky; top: 24px; display: flex; flex-direction: column; gap: var(--gap); max-height: calc(100vh - 48px); overflow: auto; }
+.week-side .week-three { margin-bottom: 0; }
 .tray-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 .tray-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-row); background: var(--surface); cursor: grab; }
 .tray-item:hover { border-color: var(--control); }
 .tray-item i { width: 6px; height: 6px; border-radius: 50%; flex: none; }
 .tray-item span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .week-cal { padding: 0; overflow: hidden; background: var(--surface); border: 1px solid var(--border); }
-.week-scroll { overflow: auto; max-height: calc(100vh - 170px); }
+/* The grid fills the window below the page header; it scrolls inside itself. */
+.week-scroll { overflow: auto; height: calc(100vh - 150px); min-height: 520px; }
 .week-head, .week-body { display: grid; grid-template-columns: 52px repeat(7, minmax(78px, 1fr)); min-width: 600px; }
 .week-head { position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--border); }
 .week-day-head { padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid var(--border); min-width: 0; }
@@ -413,7 +415,9 @@ code { font: inherit; font-size: var(--fs-small); background: var(--surface); bo
   .col-9, .col-6, .col-3 { grid-column: span 12; }
   .stack-col.col-3 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tasks-layout, .week-layout, .review-grid { grid-template-columns: 1fr; }
-  .week-tray { position: static; max-height: none; }
+  .week-side { position: static; max-height: none; }
+  .week-cal { order: -1; }
+  .week-scroll { height: 75vh; min-height: 480px; }
   .tray-list { flex-direction: row; flex-wrap: wrap; }
   .setting { grid-template-columns: 1fr; }
 }

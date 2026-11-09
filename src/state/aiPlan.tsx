@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AiPlanDialog } from '../components/AiPlanDialog';
+import { takeResume } from './aiPlanResume';
 
 export interface AiPlanOpenOptions {
   prompt?: string;
@@ -25,6 +26,11 @@ export function AiPlanProvider({ children }: { children: ReactNode }) {
   const muteBlockToast = useCallback((ids: string[]) => ids.forEach((id) => muted.current.add(id)), []);
   const isBlockToastMuted = useCallback((id: string) => muted.current.has(id), []);
   const value = useMemo(() => ({ open, muteBlockToast, isBlockToastMuted }), [open, muteBlockToast, isBlockToastMuted]);
+  // After a reload that picked up a new deploy, reopen the request and run it.
+  useEffect(() => {
+    const prompt = takeResume();
+    if (prompt) open({ prompt, run: true });
+  }, [open]);
   return (
     <AiPlanContext.Provider value={value}>
       {children}

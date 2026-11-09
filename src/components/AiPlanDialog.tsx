@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { claimAutoReload, saveResume } from '../state/aiPlanResume';
 import { Modal } from './Modal';
-import { complete } from '../lib/ai';
+import { StaleAppError, complete } from '../lib/ai';
 import { buildPlanRequest, describeApplied, parsePlan, toActions, type ParsedPlan, type PlanItem } from '../lib/aiPlan';
 import { minutesNow } from '../lib/date';
 import { useAiPlan } from '../state/aiPlan';
@@ -63,6 +64,12 @@ export function AiPlanDialog({ initialPrompt = '', autoRun = false, onClose }: P
       setResult(parsed);
       setPicked(new Set(parsed.items.map((i) => i.id)));
     } catch (e) {
+      if (e instanceof StaleAppError && claimAutoReload()) {
+        // Old page after a deploy: keep the request, load the new version, and pick up where we left off.
+        saveResume(ask);
+        window.location.reload();
+        return;
+      }
       if (alive.current) setError(e instanceof Error ? e.message : 'The model could not answer.');
     } finally {
       if (alive.current) setBusy(false);

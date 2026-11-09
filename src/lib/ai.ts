@@ -155,9 +155,25 @@ function readText(cfg: AiConfig, data: unknown): string | undefined {
   return typeof t === 'string' && t.trim() ? t : undefined;
 }
 
+/** The page is older than the live deploy: a lazily loaded file it asks for no longer exists. A reload fixes it. */
+export class StaleAppError extends Error {
+  constructor() {
+    super('ProFocus was updated since this page opened. Reload to get the new version.');
+    this.name = 'StaleAppError';
+  }
+}
+
+async function loadAnthropicSdk(): Promise<typeof import('@anthropic-ai/sdk')> {
+  try {
+    return await import('@anthropic-ai/sdk');
+  } catch {
+    throw new StaleAppError();
+  }
+}
+
 /** Official SDK, loaded on demand so other providers never download it. JSON mode needs no extra param: the system prompt asks for JSON and parseSuggestions is tolerant. */
 async function completeAnthropic(cfg: AiConfig, system: string, user: string, opts: CompleteOpts): Promise<string> {
-  const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  const { default: Anthropic } = await loadAnthropicSdk();
   const client = new Anthropic({ apiKey: cfg.apiKey, dangerouslyAllowBrowser: true, timeout: opts.timeoutMs ?? TIMEOUT_MS, maxRetries: 1 });
   try {
     const res = await client.beta.messages.create({

@@ -91,3 +91,27 @@
 .sidebar .timer .btn { background: var(--sidebar-active); border-color: var(--sidebar-active); color: var(--sidebar-ink-active); }
 .sidebar .timer .btn.primary { background: var(--sidebar-mark); border-color: var(--sidebar-mark); color: #1a0a12; }
 .sidebar .timer select { background: #1f1f23; border-color: var(--sidebar-active); color: var(--sidebar-ink-active); }
+
+/* Sidebar foot: timer, then one quiet row with the sync state and the SOS link, at the very bottom. */
+.sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+.sidebar-foot .sidebar-timer { margin-top: 0; }
+.sidebar-foot-row { display: flex; align-items: center; gap: 8px; min-height: 24px; }
+.sidebar-foot-row .sync-line { margin: 0; }
+
+/* Week header: the calendar status sits under the subtitle, so its changing text never moves the buttons. */
+.page-head .calendar-line { display: flex; gap: 8px; align-items: baseline; margin-top: 4px; font-size: var(--fs-small); color: var(--muted); }
+
+/* Week "To schedule" tray: filters, search, a short list and "Show more". */
+.tray-head { align-items: baseline; }
+.seg.tray-seg { margin: 10px 0 0; width: 100%; flex-wrap: nowrap; }
+.seg.tray-seg button { flex: 1; justify-content: center; height: 28px; padding: 0 6px; font-size: var(--fs-small); white-space: nowrap; }
+.tray-search { width: 100%; margin-top: 10px; }
+.week-tray .tray-item { padding: 8px 10px; }
+.week-tray .tray-item { align-items: flex-start; }
+.week-tray .tray-item i { margin-top: 7px; }
+.week-tray .tray-title { flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.week-tray .tray-item small { margin-top: 2px; }
+.week-tray .tray-item small { flex: none; font-size: var(--fs-small); }
+.tray-more { margin-top: 8px; padding: 0; }
+.week-tray .hint { margin-top: 10px; }
+@media (max-width: 760px) { .sidebar-foot { display: none; } }

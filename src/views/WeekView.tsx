@@ -3,6 +3,7 @@ import { PlanWeek } from '../components/PlanWeek';
 import { WeekPriorities } from '../components/WeekPriorities';
 import { BlockEditor, newDraft, type BlockDraft } from '../components/BlockEditor';
 import { DayColumn, TimeGutter } from '../components/DayColumn';
+import { WeekTray } from '../components/WeekTray';
 import { addDays, formatDay, formatDuration, minutesNow, shortWeekday, startOfWeek, weekDays } from '../lib/date';
 import { focusMinutesOn } from '../lib/stats';
 import { useCalendarLine } from '../state/calendarStatus';
@@ -53,6 +54,12 @@ export function WeekView() {
         <div>
           <h1>Week</h1>
           <p className="sub num">{formatDay(weekStart, { month: 'long', day: 'numeric' })} – {formatDay(end, { month: weekStart.slice(5, 7) === end.slice(5, 7) ? undefined : 'long', day: 'numeric' })} · {formatDuration(weekFocus)} focused</p>
+          {calendarLine && (
+            <p className="calendar-line">
+              <span role="status" className={`calendar-note num ${calendarLine.error ? 'sync-error' : ''}`}>{calendarLine.text}</span>
+              {calendarLine.actionLabel && <button type="button" className="link-btn" onClick={calendarLine.run}>{calendarLine.actionLabel}</button>}
+            </p>
+          )}
         </div>
         <span className="spacer" />
         <div className="stack week-head-tools">
@@ -61,13 +68,6 @@ export function WeekView() {
             <button type="button" className="btn" onClick={() => setWeekStart(startOfWeek(today, state.settings.weekStartsOn))}>This week</button>
             <button type="button" className="btn" onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Next week">→</button>
           </div>
-          {calendarLine && (
-            <div className="row gap calendar-line">
-              <span className="spacer" />
-              <span role="status" className={`calendar-note num ${calendarLine.error ? 'sync-error' : ''}`}>{calendarLine.text}</span>
-              {calendarLine.actionLabel && <button type="button" className="link-btn" onClick={calendarLine.run}>{calendarLine.actionLabel}</button>}
-            </div>
-          )}
         </div>
         <div className="row gap">
           {aiEnabled && <button type="button" className="btn ai-plan-btn" onClick={() => aiPlan.open()}>Plan with AI</button>}
@@ -80,31 +80,7 @@ export function WeekView() {
       <div className="week-layout">
         <div className="week-side">
         {(state.reviews[weekStart]?.priorities?.length ?? 0) > 0 && <WeekPriorities week={weekStart} />}
-        <aside className="card week-tray">
-          <h2 className="card-title">To schedule</h2>
-          <p className="hint">Drag onto a day to time-block it.</p>
-          <ul className="tray-list">
-            {toSchedule.map((t) => {
-              const p = state.projects.find((x) => x.id === t.projectId);
-              return (
-                <li
-                  key={t.id}
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('text/profocus-task', t.id);
-                    e.dataTransfer.effectAllowed = 'copy';
-                  }}
-                  className="tray-item"
-                >
-                  <i style={{ background: p?.color ?? 'var(--line-strong)' }} />
-                  <span>{t.title}</span>
-                  {t.estimateMin && <small className="muted">{formatDuration(t.estimateMin)}</small>}
-                </li>
-              );
-            })}
-            {toSchedule.length === 0 && <li className="empty">All caught up.</li>}
-          </ul>
-        </aside>
+        <WeekTray tasks={toSchedule} weekStart={weekStart} weekEnd={end} today={today} />
         </div>
 
         <div className="card week-cal">

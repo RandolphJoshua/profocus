@@ -216,13 +216,17 @@ function AppShell() {
             ))}
           </ul>
         </nav>
-        <button type="button" className="link-btn sos-link" onClick={() => setSos(true)} aria-haspopup="dialog">SOS</button>
-        {view !== 'today' && <div className="sidebar-timer"><FocusTimer compact /></div>}
-        {sync.status !== 'off' && (
-          <p className="sync-line" role="status">
-            {sync.status === 'syncing' ? 'Syncing…' : sync.status === 'error' ? 'Sync error' : 'Synced'}
-          </p>
-        )}
+        <div className="sidebar-foot">
+          {view !== 'today' && <div className="sidebar-timer"><FocusTimer compact /></div>}
+          <div className="sidebar-foot-row">
+            {sync.status !== 'off' && (
+              <p className="sync-line" role="status">
+                {sync.status === 'syncing' ? 'Syncing…' : sync.status === 'error' ? 'Sync error' : 'Synced'}
+              </p>
+            )}
+            <button type="button" className="link-btn sos-link" onClick={() => setSos(true)} aria-haspopup="dialog" title="20-minute reset">SOS</button>
+          </div>
+        </div>
       </aside>
 
       <main id="main" className={`main view-${view}`} hidden={focus}>

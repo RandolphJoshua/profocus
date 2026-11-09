@@ -45,9 +45,8 @@ button.day-chip:hover { border-color: var(--text); }
 }
 
 /* SOS reset */
-.sidebar .sos-link { margin-top: auto; align-self: flex-start; padding: 4px 8px; color: var(--sidebar-ink); }
+.sidebar .sos-link { padding: 4px 8px; margin-left: auto; color: var(--sidebar-ink); font-size: 12px; }
 .sidebar .sos-link:hover { color: var(--sidebar-ink-active); }
-.sos-link + .sidebar-timer { margin-top: 0; }
 .sos-clock { font-size: var(--fs-kpi); line-height: 48px; font-weight: 600; text-align: center; }
 .sos-closing { font-size: var(--fs-section); line-height: 28px; font-weight: 600; text-align: center; padding: 8px 0; }
 .sos-steps { list-style: decimal; margin: 0; padding: 0 0 0 24px; display: flex; flex-direction: column; gap: 4px; }

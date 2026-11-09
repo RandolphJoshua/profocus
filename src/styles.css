@@ -238,8 +238,8 @@ kbd { font: 400 var(--fs-small)/16px var(--font); border: 1px solid var(--contro
 
 .habit-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .habit-chip {
-  display: inline-flex; align-items: center; height: 32px; border: 1px solid var(--control); background: var(--surface); color: var(--text);
-  padding: 0 12px; border-radius: 999px; cursor: pointer; transition: background-color var(--t-hover) var(--ease-out), border-color var(--t-hover) var(--ease-out);
+  display: inline-flex; align-items: center; gap: 0; min-height: 32px; border: 1px solid var(--control); background: var(--surface); color: var(--text);
+  padding: 5px 12px; border-radius: 16px; text-align: left; line-height: 20px; max-width: 100%; cursor: pointer; transition: background-color var(--t-hover) var(--ease-out), border-color var(--t-hover) var(--ease-out);
 }
 .habit-chip:hover { border-color: var(--text); }
 .habit-chip.is-on { background: var(--accent-tint); border-color: var(--accent); }

@@ -1,12 +1,12 @@
 {
  "version": 1,
  "kind": "app",
- "at": "2026-11-04T17:51:50.934Z",
- "seed": 806064040,
+ "at": "2026-11-09T09:19:36.435Z",
+ "seed": 1208906453,
  "input": {
-  "kind": "workspace",
-  "brief": "ProFocus: a one-person planner — daily highlight, time-blocked calendar, focus timer, habits, weekly review",
-  "theme": "light",
+  "kind": "creator",
+  "brief": "ProFocus: a one-person planner — daily highlight, time-blocked calendar, focus timer, habits, weekly review. Restyle: dark sidebar, bright accent, big numbers and headings, coloured project bands",
+  "theme": null,
   "screens": [
    "home",
    "analytics",
@@ -14,126 +14,132 @@
    "list"
   ],
   "keep": [],
-  "style": "editorial-greeting"
+  "style": "accent-ladder"
  },
  "style": {
-  "id": "editorial-greeting",
-  "name": "Editorial greeting",
+  "id": "accent-ladder",
+  "name": "Accent ladder",
   "theme": "light",
-  "basis": "2 screens: a team workspace home and a personal insights home",
+  "basis": "3 screens: a newsletter home, a network analytics overview, a cap-table company home",
   "suits": [
-   "workspace",
-   "creator"
+   "creator",
+   "smb-admin",
+   "community",
+   "analytics"
   ],
-  "idea": "A personal or team home that opens with a typeset greeting in a centred column; every number below it is set at regular weight on tonal panels.",
-  "colourBudget": "under 2% for the accent; tonal panels carry the structure",
+  "idea": "One brand hue at full strength only on small marks, and its pale tints doing all the area work: the active nav row, a plan card, badges and progress tracks.",
+  "colourBudget": "3-10%, nearly all of it as pale tints of the one hue",
   "tokens": {
-   "ground": "#ffffff",
-   "surface": "#f9f9f9",
-   "raised": "#ffffff",
-   "border": "#eaeaea",
-   "rule": "#f3f3f3",
-   "control": "#d9d9d6",
-   "text": "#1f201d",
-   "muted": "#636361",
-   "accent": "#1b6e66",
-   "positive": "#2e7d32",
-   "negative": "#b42318",
+   "ground": "#f9fafb",
+   "surface": "#ffffff",
+   "raised": "#f3f4f6",
+   "border": "#e5e7eb",
+   "rule": "#f2f2f2",
+   "control": "#d1d5db",
+   "text": "#111827",
+   "muted": "#5f6672",
+   "accent": "#b8336a",
+   "accentSoft": "#fdf2f7",
+   "accentTrack": "#f8dbe8",
+   "accentInk": "#6b1d3e",
+   "positive": "#247b50",
+   "negative": "#c4242a",
    "warning": "#92400e",
    "chart": [
-    "#1f201d",
-    "#1b6e66",
-    "#8c8c88"
+    "#b8336a",
+    "#6b7280",
+    "#d4618f"
    ],
    "pills": {
     "positive": [
-     "#dcfae5",
-     "#04250e"
+     "#dcfce7",
+     "#14532d"
     ],
     "negative": [
-     "#fdecea",
-     "#7a1d14"
+     "#ffedea",
+     "#831c1e"
     ],
     "warning": [
      "#fffbeb",
      "#92400e"
     ],
     "neutral": [
-     "#f3f3f3",
-     "#3d3d3a"
+     "#f3f4f6",
+     "#374151"
+    ],
+    "accent": [
+     "#fdf2f7",
+     "#6b1d3e"
     ]
    },
    "radius": {
-    "card": 22,
-    "control": 999
+    "card": 8,
+    "control": 6
    },
    "font": {
-    "family": "Instrument Sans",
-    "second": "Instrument Serif, for the greeting only",
+    "family": "DM Sans",
+    "second": null,
     "fallback": "Inter, system-ui, sans-serif",
     "sizes": {
-     "title": 48,
-     "section": 14,
-     "kpi": 32,
+     "title": 32,
+     "section": 18,
+     "kpi": 24,
      "body": 14,
      "small": 12
     },
     "weights": [
      400,
      500,
-     600
+     600,
+     700
     ],
-    "note": "The 48px title is the serif greeting; set in the sans it is 24/400. Every figure is 400."
+    "note": "700 for the page title only."
    },
    "density": "sparse",
-   "rowHeight": 63,
-   "sidebarWidth": 224,
-   "gap": 16,
-   "pad": 20,
-   "controlHeight": 38
+   "rowHeight": 45,
+   "sidebarWidth": 230,
+   "gap": 24,
+   "pad": 24,
+   "controlHeight": 32
   },
   "shell": "open-plane",
   "shellAlternatives": [
-   "framed-sheet"
+   "ruled-t-frame"
   ],
-  "signature": "The greeting is the h1, in a centred 1100px column on a real 12-column grid (77px columns, 16px gutters), with spans that change by row but share column lines (3/3/3/3, then 9/3, then 6/6, so every internal edge meets one above it). Every figure below is set at regular weight on tonal panels, one layer each: a panel one step off white holds its title and its content directly; a white inner card is used once, for the main chart.",
+  "signature": "The full hue goes only on small marks: the one filled-button style, the data series and the active nav icon. Its 50-200 tints carry every area: the active nav row (tint fill with the dark ink of the hue), the plan or trial card, badges and progress tracks. The primary action may instead be near-black, as on the study's newsletter home.",
   "identity": [
-   "The greeting names this team or household and today's one fact, set from the data (\"Morning, Okoro house. The car is ready by 06:10.\"), never \"Welcome back\".",
-   "Each person's stable hue as a pale tint on their avatar and their own lane or column (a couple and their joint account as three lanes): identity, not data, so it stays out of the chart legends.",
-   "A surface from the product's world in place of #f9f9f9, one level toward its material (a sage for a garden, a stone for a kitchen, a blue-grey for a studio), with the page white kept."
+   "The ladder built from the brand's own hue (its logo, the brief's object) in place of the dealt raspberry: the full hue on small marks, its pale tints on areas, never violet or indigo.",
+   "The product's objects in the lead block: the newsletter's latest issue as its cover, the shop's products as 40px thumbnails, the course's lessons with their own art.",
+   "A ground one level toward the hue's palest tint (#fbf7f8 for the raspberry) in place of #f9fafb, so the page and the tints read as one family."
   ],
   "avoid": [
-   "an emoji in the greeting",
-   "a tracked uppercase date above the greeting (put the date after it or in the grey line below)",
-   "a 624-864px column on a desktop screen (both were flagged as wasted width)",
-   "a tray around every card (a grey panel with a white card 6px inside it, on every block, read as a bento template in testing)",
-   "red as the accent: in testing red marked a record week of upgrades and read as an alarm; red is for the failing fact only"
+   "the full hue on large areas",
+   "a second accent family (four families on one screen was flagged in the study)",
+   "a gradient on the trial chip or upgrade button",
+   "a left accent bar on the active nav row on top of the tint (seen once in 23 screens)",
+   "violet or indigo"
   ],
-  "notes": "One studied screen set its greeting in a serif at 48/700 and its counts in a mono; the other set the greeting at 24/400 in the sans. The red is the second screen's chart red moved two degrees of hue out of the house terracotta range. After testing, the studied red accent was replaced by a deep teal: red on good news read as an alarm."
+  "notes": "All three studied screens of this kind used violet, purple or pink as the one hue. The move does not depend on the hue, so the house's violet and indigo ban holds and the library deals a raspberry instead."
  },
  "shell": {
-  "id": "framed-sheet",
-  "name": "Tinted frame, white sheet",
-  "basis": "8 of 23 screens, in three variants",
+  "id": "ruled-t-frame",
+  "name": "Ruled T-frame",
+  "basis": "4 of 23 screens (3 dark, 1 light)",
   "suits": [
-   "analytics",
-   "devtools",
-   "builder",
-   "smb-admin",
-   "support"
+   "community",
+   "creator",
+   "smb-admin"
   ],
   "numbers": {
-   "chrome": "#f6f6f6-#f9fbfc (a warm #f7f6f2 once)",
-   "sheetInset": "8px from the window's right and bottom edges (12 and 16 once each)",
-   "sheetRadius": "10-16, median 16",
-   "sheetEdge": "1px #eaeaea-#ededed, no shadow",
-   "sidebarWidth": "220-263 (228 on two screens)",
-   "topBar": "48px on the chrome ground with no rule; search 548x32 centred on the window with a shortcut hint",
-   "contentPadding": 24,
-   "floatingVariant": "both panels inset 12px with a 12px gutter, radius 10"
+   "sidebarWidth": "210-240",
+   "topBar": "64px with a 1px bottom rule",
+   "rules": "1px; #1a1a1a on #000, #f2f2f2 on white",
+   "navPitch": "34 (dark) or 40 (light)",
+   "switcher": "at the top bar's right end, behind a full-height 1px divider",
+   "contentGutter": "29px from the sidebar rule and the window edge"
   },
-  "blueprint": "Sidebar and top bar share one tinted ground with no rule between them, forming an L; the page lives on a white sheet. Variant one: the sheet butts against the sidebar and the top bar and is inset 8px from the right and bottom edges, 16px radius, 1px edge. Variant two: a flush L-frame with no inset, the frame marked by one rule. Variant three: sidebar and content are two floating panels inset 12px from every edge with a 12px gutter. The top bar, when present, is 48px and holds a centred search, the account button and a help or AI icon. Inside the sheet the content has 24px padding and starts with the breadcrumb or title row.",
-  "phone": "The frame disappears: the sheet becomes the screen, with a 48px top bar (menu button, title, one action) on the chrome tint. The search moves into the menu sheet or behind an icon."
+  "blueprint": "A 210-240px sidebar and a 64px top bar share one ground, divided only by 1px rules. The workspace or community switcher sits at the right end of the top bar behind a full-height divider; the sidebar holds the wordmark and the nav on a 34px pitch with sentence-case group labels. On dark, the active item is its label going from #bbb to #fff. The top bar must carry something real (search, the back link and object name, the switcher): two studied screens left about 1070px of it blank and were flagged.",
+  "phone": "The top bar stays at 48-56px with the switcher reduced to its mark; the sidebar becomes a full-screen menu sheet or a bottom bar of four or five destinations."
  },
  "screens": [
   {

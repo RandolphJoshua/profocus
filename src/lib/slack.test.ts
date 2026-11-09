@@ -8,6 +8,13 @@ const profileOf = (p: URLSearchParams) => JSON.parse(p.get('profile') ?? '{}') a
 beforeEach(() => localStorage.clear());
 
 describe('focusStatusParams', () => {
+  it('uses only the task title when status text is empty and the task name is on', () => {
+    const cfg: SlackConfig = { token: 'xoxp-1', text: '', emoji: ':dart:', withTask: true, dnd: false };
+    const status = (title?: string) => JSON.parse(focusStatusParams(cfg, { minutes: 25, taskTitle: title, nowMs: 0 }).get('profile') ?? '{}').status_text;
+    expect(status('Finish chapter 3 outline')).toBe('Finish chapter 3 outline');
+    expect(status(undefined)).toBe('Focusing');
+  });
+
   const nowMs = 1_700_000_000_000;
   it('sets text, emoji and an expiration minutes ahead', () => {
     const p = focusStatusParams(cfg, { minutes: 25, taskTitle: 'Write', nowMs });

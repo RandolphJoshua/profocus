@@ -7,6 +7,8 @@ import { useTimer } from './timer';
 /** Set only while ProFocus owns the Slack status, so a status the user set by hand is never cleared. */
 export const SLACK_ACTIVE_KEY = 'profocus:slack-active';
 const MS_PER_MINUTE = 60_000;
+/** Wait this long after the task title changes mid-session before updating Slack. */
+const TITLE_SETTLE_MS = 1000;
 
 let lastError = '';
 const listeners = new Set<() => void>();
@@ -52,7 +54,7 @@ export function useSlackFocusSync(): void {
   const toastRef = useRef(toast);
   toastRef.current = toast;
   const queue = useRef<Promise<void>>(Promise.resolve());
-  const startedFor = useRef<number | undefined>(undefined);
+  const startedFor = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     const run = (job: () => Promise<void>) => {
@@ -66,16 +68,27 @@ export function useSlackFocusSync(): void {
       );
     };
     if (active && endsAt !== undefined) {
-      if (startedFor.current === endsAt) return;
-      startedFor.current = endsAt;
-      const minutes = Math.max(1, Math.ceil((endsAt - Date.now()) / MS_PER_MINUTE));
-      run(async () => {
-        const cfg = loadSlackConfig();
-        if (!cfg) return;
-        await startFocusStatus(cfg, minutes, titleRef.current);
-        flag('1');
-      });
-      return;
+      // Re-send when the session restarts or its task changes, so the status follows the current task.
+      const key = `${endsAt}|${taskTitle ?? ''}`;
+      if (startedFor.current === key) return;
+      // A new session goes out at once; a title change mid-session waits so typing does not send a call per key.
+      const sameSession = startedFor.current?.startsWith(`${endsAt}|`) ?? false;
+      const send = () => {
+        startedFor.current = key;
+        const minutes = Math.max(1, Math.ceil((endsAt - Date.now()) / MS_PER_MINUTE));
+        run(async () => {
+          const cfg = loadSlackConfig();
+          if (!cfg) return;
+          await startFocusStatus(cfg, minutes, titleRef.current);
+          flag('1');
+        });
+      };
+      if (!sameSession) {
+        send();
+        return;
+      }
+      const id = window.setTimeout(send, TITLE_SETTLE_MS);
+      return () => window.clearTimeout(id);
     }
     startedFor.current = undefined;
     run(async () => {
@@ -84,5 +97,5 @@ export function useSlackFocusSync(): void {
       flag(null);
       if (cfg) await endFocusStatus(cfg);
     });
-  }, [active, endsAt]);
+  }, [active, endsAt, taskTitle]);
 }

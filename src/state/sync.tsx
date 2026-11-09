@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Modal } from '../components/Modal';
 import { normalizeState, loadSavedAt } from '../lib/storage';
 import { supabase } from '../lib/supabase';
+import { saveSnapshot } from '../lib/snapshots';
 import { chooseSource, isTouched, loadSyncLink, saveSyncLink, stateHash } from '../lib/sync';
 import type { AppState } from '../lib/types';
 import { useAuth } from './auth';
@@ -50,6 +51,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
   const pull = useCallback((row: Row) => {
     const next = normalizeState(row.state);
+    // Local edits not yet in the cloud would be lost: keep a copy that Settings can restore.
+    if (isTouched(stateRef.current) && stateRef.current !== syncedState.current) saveSnapshot('Before loading the cloud copy', stateRef.current);
     syncedState.current = next;
     stamp.current = row.updated_at;
     link(row.updated_at, next);

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { todayKey } from '../lib/date';
 import { emptyState, normalizeState } from '../lib/storage';
+import { listSnapshots, saveSnapshot } from '../lib/snapshots';
 import type { Settings, Theme } from '../lib/types';
 import { useAuth } from '../state/auth';
 import { DEFAULT_MODELS, type AiConfig, type Provider } from '../lib/ai';
@@ -199,6 +200,13 @@ export function SettingsView() {
   const fileRef = useRef<HTMLInputElement>(null);
   const mergeRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState('');
+  const [, refreshSnapshots] = useState(0);
+  const snapshots = listSnapshots();
+  const replaceAll = (next: typeof state, reason: string) => {
+    saveSnapshot(reason, state);
+    dispatch({ type: 'REPLACE_STATE', state: next });
+    refreshSnapshots((n) => n + 1);
+  };
   const set = (patch: Partial<Settings>) => dispatch({ type: 'SET_SETTINGS', patch });
   const num = (v: string, lo: number, hi: number) => Math.min(hi, Math.max(lo, Number(v) || lo));
 
@@ -282,29 +290,9 @@ export function SettingsView() {
           <p className="muted">Backups and resets.</p>
         </div>
         <div className="setting-body stack">
-        <p className="muted">Everything lives in this browser (localStorage), and in the cloud when you are signed in. Export a backup now and then. "Add from file" merges goals, projects, seasons, tasks, habits and routines from a file without changing anything you already have; "Import JSON" replaces everything.</p>
+        <p className="muted">Everything lives in this browser (localStorage), and in the cloud when you are signed in. Export a backup now and then. "Add from file" merges goals, projects, seasons, tasks, habits and routines from a file without changing anything you already have. "Replace everything from a backup" deletes what you have first.</p>
         <div className="row gap">
           <button type="button" className="btn" onClick={exportData}>Export JSON</button>
-          <button type="button" className="btn" onClick={() => fileRef.current?.click()}>Import JSON…</button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/json,.json"
-            hidden
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              e.target.value = '';
-              if (!file) return;
-              try {
-                const next = normalizeState(JSON.parse(await file.text()));
-                if (!window.confirm(`Replace current data with ${next.tasks.length} tasks and ${next.blocks.length} blocks from the backup?`)) return;
-                dispatch({ type: 'REPLACE_STATE', state: next });
-                setMsg('Backup imported.');
-              } catch {
-                setMsg('That file is not a valid ProFocus backup.');
-              }
-            }}
-          />
           <button type="button" className="btn" onClick={() => mergeRef.current?.click()}>Add from file…</button>
           <input
             ref={mergeRef}
@@ -327,18 +315,65 @@ export function SettingsView() {
             }}
           />
           <span className="spacer" />
+          <button type="button" className="btn danger" onClick={() => fileRef.current?.click()}>Replace everything from a backup…</button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/json,.json"
+            hidden
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (!file) return;
+              try {
+                const next = normalizeState(JSON.parse(await file.text()));
+                const ok = window.confirm(
+                  `This DELETES your current ${state.tasks.length} tasks, ${state.blocks.length} blocks and ${state.routines.length} routines, and puts the backup's ${next.tasks.length} tasks in their place.\n\nTo add items without deleting anything, cancel and use "Add from file" instead.`,
+                );
+                if (!ok) return;
+                replaceAll(next, 'Before replacing from a backup');
+                setMsg('Backup loaded. Your previous data is kept under "Restore a previous copy".');
+              } catch {
+                setMsg('That file is not a valid ProFocus backup.');
+              }
+            }}
+          />
           <button
             type="button"
             className="btn danger"
             onClick={() => {
-              if (window.confirm('Delete all tasks, blocks, habits and history? Export a backup first if unsure.')) {
-                dispatch({ type: 'REPLACE_STATE', state: { ...emptyState(), settings: state.settings } });
+              if (window.confirm('Delete all tasks, blocks, habits, routines and history? A copy is kept under "Restore a previous copy".')) {
+                replaceAll({ ...emptyState(), settings: state.settings }, 'Before reset');
                 setMsg('All data cleared.');
               }
             }}
           >Reset everything</button>
         </div>
         {msg && <p role="status" className="muted">{msg}</p>}
+        {snapshots.length > 0 && (
+          <div className="stack">
+            <h3 className="panel-title">Restore a previous copy</h3>
+            <p className="hint">Saved automatically on this device just before your data was replaced. The newest three are kept.</p>
+            <ul className="stack">
+              {snapshots.map((snap) => (
+                <li key={snap.at} className="row gap">
+                  <span className="num">{new Date(snap.at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="muted">{snap.reason} · {snap.counts.tasks} tasks · {snap.counts.blocks} blocks · {snap.counts.routines} routines</span>
+                  <span className="spacer" />
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      if (!window.confirm(`Replace what you have now with this copy (${snap.counts.tasks} tasks)? Your current data is saved as a copy first.`)) return;
+                      replaceAll(snap.state, 'Before restoring a copy');
+                      setMsg('Copy restored.');
+                    }}
+                  >Restore</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         </div>
       </section>
 

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { PlanWeek } from '../components/PlanWeek';
 import { SettingsView } from '../views/SettingsView';
 import { TodayView } from '../views/TodayView';
@@ -45,13 +45,13 @@ describe('coach without a key', () => {
     mount(<SettingsView />);
     expect(screen.getByRole('heading', { name: 'AI coach' })).toBeTruthy();
     expect((screen.getByLabelText('API key') as HTMLInputElement).type).toBe('password');
-    expect(screen.getByText('Stays in this browser. Never synced.')).toBeTruthy();
+    expect(screen.getAllByText('Stays in this browser. Never synced.').length).toBeGreaterThan(0);
   });
 
   it('saves the key to localStorage only, not to app state', () => {
     mount(<SettingsView />);
     fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'SECRET-123' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(within(screen.getByRole('heading', { name: 'AI coach' }).closest('section') as HTMLElement).getByRole('button', { name: 'Save' }));
     expect(JSON.parse(localStorage.getItem(AI_KEY) ?? '{}').apiKey).toBe('SECRET-123');
     expect(localStorage.getItem('profocus:v1') ?? '').not.toContain('SECRET-123');
     fireEvent.click(screen.getByRole('button', { name: 'Remove key' }));

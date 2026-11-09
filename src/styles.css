@@ -118,7 +118,7 @@ h1 { font-size: var(--fs-title); line-height: 38px; font-weight: 700; letter-spa
 
 /* ---------- controls ---------- */
 label { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-small); color: var(--muted); }
-label.check-label { flex-direction: row; align-items: center; font-size: var(--fs-body); color: var(--text); }
+label.check-label { flex-direction: row; flex-wrap: nowrap; align-items: center; font-size: var(--fs-body); color: var(--text); }
 input:not([type='checkbox'], [type='color']), select, textarea {
   width: 100%; min-height: var(--control-height); padding: 8px 12px; border: 1px solid var(--control); border-radius: var(--radius-input);
   background: var(--surface); color: var(--text); font-size: var(--fs-body);

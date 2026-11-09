@@ -58,6 +58,15 @@ Your score for the day (40 highlight · 30 focus vs plan · 15 habits · 15 task
 
 **Seasons → Close season** asks what the season taught you and keeps the answer in *Past seasons*. Then start the next season with the goals that deserve the next 12 weeks.
 
+## Slack status while focusing
+
+1. Open api.slack.com/apps, choose Create New App, then From scratch, and pick your workspace.
+2. Under OAuth & Permissions, add the User Token Scopes `users.profile:write` and `dnd:write`.
+3. Install to Workspace and copy the User OAuth Token (`xoxp-…`).
+4. In **Settings → Slack status**, paste it, then **Save** and **Test**.
+
+The token stays in this browser. Starting a focus session sets your status (and Do Not Disturb if enabled); stopping clears it. Some workspaces need an admin to approve new apps.
+
 ## Keys
 
 | Key | Does |

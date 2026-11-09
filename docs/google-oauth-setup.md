@@ -23,7 +23,7 @@ Account to use for both dashboards: the same Google account that owns the Supaba
 1. Left menu → **APIs & Services → OAuth consent screen** (in newer consoles this is **Google Auth Platform → Branding**).
 2. If asked for user type: choose **External**.
 3. App information: App name `ProFocus`; User support email = your own address.
-4. App domain (optional fields can stay empty). Authorised domains: add `vercel.app` and `supabase.co`.
+4. App domain (optional fields can stay empty). Authorised domains: add `profocus-gilt.vercel.app` and `jdhefguipsmsmyhhpmun.supabase.co` (Google rejects the bare `vercel.app` / `supabase.co`: they are public suffixes).
 5. Developer contact email = your own address. Save.
 6. **Audience** (or "Publishing status"): leave the app in **Testing**. Under **Test users** add your own Google address (and any other address that should be able to sign in). Do **not** click Publish — publishing triggers Google's verification review and is not needed for personal use.
 

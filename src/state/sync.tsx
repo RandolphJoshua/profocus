@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Modal } from '../components/Modal';
 import { normalizeState, loadSavedAt } from '../lib/storage';
 import { supabase } from '../lib/supabase';
-import { chooseSource, isTouched } from '../lib/sync';
+import { chooseSource, isTouched, loadSyncLink, saveSyncLink, stateHash } from '../lib/sync';
 import type { AppState } from '../lib/types';
 import { useAuth } from './auth';
 import { useStore } from './store';
@@ -38,6 +38,12 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   // The state object last pushed to, or pulled from, the cloud: changes that are not ours to push.
   const syncedState = useRef<AppState | null>(null);
   const stamp = useRef<string>('');
+  const userRef = useRef(userId);
+  userRef.current = userId;
+  // Remember what this device and the cloud last agreed on, so the next load does not ask again.
+  const link = useCallback((at: string, snapshot: AppState) => {
+    if (userRef.current) saveSyncLink({ userId: userRef.current, at, hash: stateHash(normalizeState(snapshot)) });
+  }, []);
 
   const fail = useCallback((e: unknown) => setInfo((p) => ({ ...p, status: 'error', error: message(e) })), []);
   const done = useCallback((at: string) => setInfo({ status: 'synced', lastSyncAt: at }), []);
@@ -46,9 +52,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     const next = normalizeState(row.state);
     syncedState.current = next;
     stamp.current = row.updated_at;
+    link(row.updated_at, next);
     dispatch({ type: 'REPLACE_STATE', state: next });
     done(row.updated_at);
-  }, [dispatch, done]);
+  }, [dispatch, done, link]);
 
   const push = useCallback(async (id: string, snapshot: AppState) => {
     if (!supabase) return;
@@ -59,11 +66,12 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       syncedState.current = snapshot;
       stamp.current = updatedAt;
+      link(updatedAt, snapshot);
       done(updatedAt);
     } catch (e) {
       fail(e);
     }
-  }, [done, fail]);
+  }, [done, fail, link]);
 
   // Sign-in: decide which copy wins, once.
   useEffect(() => {
@@ -88,6 +96,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           localTouched: isTouched(stateRef.current),
           localSavedAt: loadSavedAt(),
           remote: row ? { updatedAt: row.updated_at, touched: isTouched(normalizeState(row.state)) } : undefined,
+          userId,
+          link: loadSyncLink(),
+          localHash: stateHash(normalizeState(stateRef.current)),
         });
         if (choice === 'ask' && row) {
           setInfo({ status: 'syncing' });
@@ -157,7 +168,13 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     <SyncContext.Provider value={value}>
       {children}
       {pending && (
-        <Modal title="Which data should this device use?" onClose={() => undefined}>
+        <Modal
+          title="Which data should this device use?"
+          onClose={() => {
+            setPending(null);
+            fail(new Error('Not syncing on this device until you choose. Reload to pick.'));
+          }}
+        >
           <div className="stack">
             <p className="muted">This device and your account both have data. The copy you do not pick is replaced.</p>
             <button type="button" className="btn" onClick={() => void choose('remote')}>

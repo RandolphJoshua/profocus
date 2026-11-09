@@ -145,6 +145,8 @@ export interface Settings {
   calendarConnected?: boolean;
   /** Mirror ProFocus time blocks into the primary Google Calendar (opt-in). */
   calendarWrite?: boolean;
+  /** The Getting started panel on Today has been dismissed. */
+  onboardingHidden?: boolean;
 }
 
 export interface AppState {

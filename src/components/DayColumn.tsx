@@ -1,9 +1,11 @@
-import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { Fragment, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { formatMinutes, minutesNow } from '../lib/date';
 import type { DateKey, ID, TimeBlock } from '../lib/types';
 import { useNow, useStore } from '../state/store';
 
 export const SNAP = 15;
+/** How long a freshly dropped block flashes its tint (matches .is-flash in motion.css). */
+const FLASH_MS = 400;
 
 interface DayColumnProps {
   date: DateKey;
@@ -30,6 +32,8 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
   const colRef = useRef<HTMLDivElement>(null);
   const [ghost, setGhost] = useState<{ start: number; end: number } | null>(null);
   const [dropAt, setDropAt] = useState<number | null>(null);
+  const [lifted, setLifted] = useState<ID | null>(null);
+  const [flashId, setFlashId] = useState<ID | null>(null);
   const now = useNow(60_000);
 
   const blocks = state.blocks.filter((b) => b.date === date).sort((a, b) => a.start - b.start);
@@ -58,6 +62,7 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
       }
       if (Math.abs(ev.clientY - startY) > 3) d = { ...d, moved: true };
       if (!d.moved) return;
+      if (d.mode === 'move') setLifted(d.id);
       const block = blocksRef.current.find((b) => b.id === (d as { id: ID }).id);
       if (!block) return;
       if (d.mode === 'resize') {
@@ -78,6 +83,7 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
+      setLifted(null);
       if (d.mode === 'create') {
         setGhost(null);
         const s = Math.min(d.anchor, d.current);
@@ -124,10 +130,13 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
         e.preventDefault();
         const start = clamp(snap(minAt(e.clientY)), dayStart, dayEnd - SNAP);
         const end = Math.min(start + (task.estimateMin ?? 30), dayEnd);
+        const blockId = `b-${Date.now().toString(36)}`;
+        setFlashId(blockId);
+        window.setTimeout(() => setFlashId((cur) => (cur === blockId ? null : cur)), FLASH_MS + 50);
         dispatch({
           type: 'BATCH',
           actions: [
-            { type: 'ADD_BLOCK', block: { id: `b-${Date.now().toString(36)}`, date, start, end, title: task.title, kind: 'focus', taskId: task.id, projectId: task.projectId } },
+            { type: 'ADD_BLOCK', block: { id: blockId, date, start, end, title: task.title, kind: 'focus', taskId: task.id, projectId: task.projectId } },
             ...(task.date !== date ? [{ type: 'UPDATE_TASK' as const, id: task.id, patch: { date } }] : []),
           ],
         });
@@ -142,9 +151,10 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
         const short = b.end - b.start <= 30;
         const external = b.source === 'google';
         return (
+          <Fragment key={b.id}>
+          {lifted === b.id && <div className="block ghost move-slot" style={{ top, height: h }} aria-hidden />}
           <div
-            key={b.id}
-            className={`block kind-${b.kind} ${task?.done ? 'is-done' : ''} ${short ? 'is-short' : ''} ${external ? 'is-external' : ''}`}
+            className={`block kind-${b.kind} ${task?.done ? 'is-done' : ''} ${short ? 'is-short' : ''} ${external ? 'is-external' : ''} ${lifted === b.id ? 'is-lifted' : ''} ${flashId === b.id ? 'is-flash' : ''}`}
             style={{ top, height: h, '--c': project?.color } as CSSProperties}
             onPointerDown={external ? (e) => e.stopPropagation() : (e) => startDrag(e, { mode: 'move', id: b.id, grabOffset: minAt(e.clientY) - b.start, moved: false })}
             onClick={external ? () => onSelect(b) : undefined}
@@ -168,6 +178,7 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
               />
             )}
           </div>
+          </Fragment>
         );
       })}
 

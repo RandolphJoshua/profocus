@@ -1,30 +1,66 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { formatDuration, relativeLabel } from '../lib/date';
 import type { Priority, Task } from '../lib/types';
 import { useStore, useToday } from '../state/store';
 import { useTimer } from '../state/timer';
+import { useToast } from './Toaster';
+
+/** After checking, the row waits this long (strike-through draws) and then collapses. */
+export const COLLAPSE_DELAY_MS = 600;
+export const COLLAPSE_MS = 240;
 
 interface TaskItemProps {
   task: Task;
   showDate?: boolean;
   /** Offer the "make this today's highlight" action. */
   canHighlight?: boolean;
+  /** The list keeps a just-completed task on screen; once done, this row collapses out. */
+  lingering?: boolean;
+  /** Called when the check completes the task, so the list can keep the row while it collapses. */
+  onComplete?: (task: Task) => void;
 }
 
-export function TaskItem({ task, showDate, canHighlight }: TaskItemProps) {
+export function TaskItem({ task, showDate, canHighlight, lingering, onComplete }: TaskItemProps) {
   const { state, dispatch } = useStore();
   const timer = useTimer();
   const today = useToday();
+  const toast = useToast();
   const [editing, setEditing] = useState(false);
+  const [pop, setPop] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const project = state.projects.find((p) => p.id === task.projectId);
   const focused = state.sessions.filter((s) => s.taskId === task.id).reduce((n, s) => n + s.minutes, 0);
   const overdue = !task.done && task.date && task.date < today;
   const isActive = timer.taskId === task.id && timer.mode === 'focus';
 
+  useEffect(() => {
+    if (!(task.done && lingering)) {
+      setCollapsed(false);
+      return;
+    }
+    const id = window.setTimeout(() => setCollapsed(true), COLLAPSE_DELAY_MS);
+    return () => window.clearTimeout(id);
+  }, [task.done, lingering]);
+
+  const toggle = () => {
+    const completing = !task.done;
+    dispatch({ type: 'TOGGLE_TASK', id: task.id, now: new Date().toISOString() });
+    setPop(completing);
+    if (!completing) return;
+    onComplete?.(task);
+    toast('Done', { action: { label: 'Undo', run: () => dispatch({ type: 'TOGGLE_TASK', id: task.id, now: new Date().toISOString() }) } });
+  };
+  const remove = () => {
+    dispatch({ type: 'DELETE_TASK', id: task.id });
+    toast('Deleted', { action: { label: 'Undo', run: () => dispatch({ type: 'ADD_TASK', task }) } });
+  };
+
   const update = (patch: Partial<Task>) => dispatch({ type: 'UPDATE_TASK', id: task.id, patch });
 
   return (
-    <li
+    <li className={`task-item ${collapsed ? 'is-collapsed' : ''}`}>
+    <div className="task-clip">
+    <div
       className={`task ${task.done ? 'is-done' : ''} ${isActive ? 'is-active' : ''}`}
       draggable={!task.done && !editing}
       onDragStart={(e) => {
@@ -36,11 +72,12 @@ export function TaskItem({ task, showDate, canHighlight }: TaskItemProps) {
       <div className="task-row">
         <button
           type="button"
-          className="check"
+          className={`check ${pop ? 'is-popping' : ''}`}
+          onAnimationEnd={() => setPop(false)}
           role="checkbox"
           aria-checked={task.done}
           aria-label={task.done ? `Mark “${task.title}” not done` : `Complete “${task.title}”`}
-          onClick={() => dispatch({ type: 'TOGGLE_TASK', id: task.id, now: new Date().toISOString() })}
+          onClick={toggle}
         />
         <button type="button" className="task-title" onClick={() => setEditing((v) => !v)} aria-expanded={editing}>
           {project && <i className="dot" />}{task.title}
@@ -104,10 +141,12 @@ export function TaskItem({ task, showDate, canHighlight }: TaskItemProps) {
             )}
             <button type="button" className="btn" onClick={() => update({ date: undefined })}>Move to inbox</button>
             <span className="spacer" />
-            <button type="button" className="btn danger" onClick={() => dispatch({ type: 'DELETE_TASK', id: task.id })}>Delete</button>
+            <button type="button" className="btn danger" onClick={remove}>Delete</button>
           </div>
         </div>
       )}
+    </div>
+    </div>
     </li>
   );
 }

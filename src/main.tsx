@@ -1,5 +1,6 @@
 import './features.css';
 import './coach.css';
+import './motion.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';

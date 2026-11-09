@@ -1,11 +1,13 @@
-import { useState, type CSSProperties, type Ref } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type Ref } from 'react';
 import { CoachNote } from '../components/CoachNote';
 import { BlockEditor, newDraft, type BlockDraft } from '../components/BlockEditor';
 import { DayColumn, TimeGutter } from '../components/DayColumn';
 import { FocusTimer } from '../components/FocusTimer';
+import { GettingStarted } from '../components/GettingStarted';
 import { PlanDay } from '../components/PlanDay';
 import { QuickAdd } from '../components/QuickAdd';
-import { TaskItem } from '../components/TaskItem';
+import { Roll } from '../components/Roll';
+import { COLLAPSE_DELAY_MS, COLLAPSE_MS, TaskItem } from '../components/TaskItem';
 import { WeekPriorities } from '../components/WeekPriorities';
 import { addDays, formatDay, formatDuration, startOfWeek } from '../lib/date';
 import { currentSeason, dayScore, focusMinutesOn, habitStreak, plannedStreak, seasonProgress } from '../lib/stats';
@@ -28,12 +30,35 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
   const [draft, setDraft] = useState<BlockDraft | null>(null);
   const [showDone, setShowDone] = useState(false);
   const [planning, setPlanning] = useState(false);
+  const [lingering, setLingering] = useState<ReadonlySet<string>>(new Set());
+  const timelineRef = useRef<HTMLDivElement>(null);
   const plan = state.days[today] ?? {};
+
+  // Keep a just-completed task in the list until its row has collapsed away.
+  const keepWhileCollapsing = (id: string) => {
+    setLingering((cur) => new Set(cur).add(id));
+    window.setTimeout(() => setLingering((cur) => {
+      const next = new Set(cur);
+      next.delete(id);
+      return next;
+    }), COLLAPSE_DELAY_MS + COLLAPSE_MS + 60);
+  };
+
+  // On first render, bring the now-line about a third of the way down the time-block panel.
+  useEffect(() => {
+    const scroller = timelineRef.current;
+    const line = scroller?.querySelector<HTMLElement>('.now-line');
+    if (!scroller || !line || !scroller.scrollTo) return;
+    const offset = line.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    const reduced = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    scroller.scrollTo({ top: Math.max(0, offset - scroller.clientHeight / 3), behavior: reduced ? 'auto' : 'smooth' });
+  }, []);
   const tomorrow = addDays(today, 1);
 
   const todays = state.tasks.filter((t) => t.date === today);
   const open = todays.filter((t) => !t.done).sort(byPriority);
   const done = todays.filter((t) => t.done);
+  const listed = todays.filter((t) => !t.done || lingering.has(t.id)).sort(byPriority);
   const overdue = state.tasks.filter((t) => !t.done && t.date && t.date < today);
   const plannedMin = open.reduce((n, t) => n + (t.estimateMin ?? 0), 0);
   const focusMin = focusMinutesOn(state.sessions, today);
@@ -77,11 +102,13 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
 
       <CoachNote />
 
+      <GettingStarted onPlanDay={() => setPlanning(true)} />
+
       <div className="tiles">
-        <div className="tile"><span className="tile-label">Open tasks</span><span className="tile-value num">{open.length}</span><span className="tile-cap num">{done.length} done today</span></div>
-        <div className="tile"><span className="tile-label">Blocked today</span><span className="tile-value num">{formatDuration(blockedMin)}</span><span className="tile-cap num">{focusBlocks.length} focus block{focusBlocks.length === 1 ? '' : 's'}</span></div>
-        <div className="tile"><span className="tile-label">Focused</span><span className="tile-value num">{formatDuration(focusMin)}</span><span className="tile-cap num">{formatDuration(plannedMin)} planned</span></div>
-        <div className="tile"><span className="tile-label">Habits</span><span className="tile-value num">{habitsDone}/{habits.length}</span><span className="tile-cap">{habits.length === 0 ? 'None yet' : habitsDone === habits.length ? 'All done' : `${habits.length - habitsDone} to go`}</span></div>
+        <div className="tile"><span className="tile-label">Open tasks</span><span className="tile-value num"><Roll value={String(open.length)} /></span><span className="tile-cap num">{done.length} done today</span></div>
+        <div className="tile"><span className="tile-label">Blocked today</span><span className="tile-value num"><Roll value={formatDuration(blockedMin)} /></span><span className="tile-cap num">{focusBlocks.length} focus block{focusBlocks.length === 1 ? '' : 's'}</span></div>
+        <div className="tile"><span className="tile-label">Focused</span><span className="tile-value num"><Roll value={formatDuration(focusMin)} /></span><span className="tile-cap num">{formatDuration(plannedMin)} planned</span></div>
+        <div className="tile"><span className="tile-label">Habits</span><span className="tile-value num"><Roll value={`${habitsDone}/${habits.length}`} /></span><span className="tile-cap">{habits.length === 0 ? 'None yet' : habitsDone === habits.length ? 'All done' : `${habits.length - habitsDone} to go`}</span></div>
       </div>
 
       <div className="today-grid">
@@ -97,8 +124,8 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
           <QuickAdd ref={quickAddRef} defaultDate={today} />
 
           <ul className="task-list" aria-label="Today's tasks">
-            {open.map((t) => <TaskItem key={t.id} task={t} canHighlight />)}
-            {open.length === 0 && <li className="empty">Nothing planned yet. Add a few tasks, then drag them onto the timeline.</li>}
+            {listed.map((t) => <TaskItem key={t.id} task={t} canHighlight lingering={lingering.has(t.id)} onComplete={(task) => keepWhileCollapsing(task.id)} />)}
+            {listed.length === 0 && <li className="empty">Nothing planned yet. Add a few tasks, then drag them onto the timeline.</li>}
           </ul>
           {done.length > 0 && (
             <>
@@ -185,7 +212,7 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
             <h2 className="panel-title">Time blocks</h2>
             <span className="hint">Drag to create · drop tasks here</span>
           </div>
-          <div className="timeline-scroll">
+          <div className="timeline-scroll" ref={timelineRef}>
             <div className="timeline-grid">
               <TimeGutter hourHeight={52} />
               <DayColumn date={today} hourHeight={52} isToday onCreate={(d, s, e) => setDraft(newDraft(d, s, e))} onSelect={(b) => setDraft(b)} />

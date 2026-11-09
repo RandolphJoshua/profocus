@@ -1,0 +1,90 @@
+/* ProFocus motion: feedback, never decoration. transform/opacity only (plus the row collapse on grid-template-rows),
+   120-300 ms, and an instant fallback under prefers-reduced-motion. */
+
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+  --t-press: 120ms;
+  --t-hover: 150ms;
+  --t-ui: 200ms;
+  --t-view: 220ms;
+  --t-roll: 260ms;
+}
+
+/* ---------- press + hover ---------- */
+.btn, .check, .nav-btn, .habit-chip, .chip, .icon-btn, .link-btn, .palette-btn, .toast-action, .energy button {
+  transition: transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease, border-color var(--t-hover) ease, color var(--t-hover) ease, opacity var(--t-hover) ease;
+}
+.btn:active, .check:active, .nav-btn:active, .habit-chip:active, .chip:active, .palette-btn:active, .toast-action:active, .energy button:active { transform: scale(0.97); }
+.task, .tile, .raised { transition: border-color var(--t-hover) ease, background-color var(--t-hover) ease; }
+@media (hover: hover) and (pointer: fine) {
+  .task:hover { background-color: var(--panel); }
+  .task.is-active:hover { background-color: var(--accent-tint); }
+}
+
+/* ---------- screen transitions ---------- */
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.view { display: block; }
+.view.is-nav:not(.is-vt) { animation: view-in var(--t-view) var(--ease-out) both; }
+.view.is-vt { view-transition-name: screen; }
+::view-transition-group(screen) { animation: none; }
+::view-transition-old(screen) { animation: none; opacity: 0; }
+::view-transition-new(screen) { animation: view-in var(--t-view) var(--ease-out) both; }
+
+/* ---------- toasts ---------- */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.toast { animation: toast-in var(--t-ui) var(--ease-out) both; }
+
+/* ---------- task completion ---------- */
+@keyframes check-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.check.is-popping { animation: check-pop 160ms var(--ease-out); }
+.task .task-title { text-decoration: line-through; text-decoration-color: transparent; transition: text-decoration-color 200ms ease, color var(--t-hover) ease; }
+.task.is-done .task-title { text-decoration-color: currentColor; }
+.task-item { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--t-ui) var(--ease-out), opacity var(--t-ui) var(--ease-out); }
+.task-item.is-collapsed { grid-template-rows: 0fr; opacity: 0; }
+.task-clip { min-height: 0; overflow: hidden; padding-bottom: 8px; }
+.task-clip:has(:focus-visible) { overflow: visible; }
+.task-list > .task-item:last-child > .task-clip { padding-bottom: 0; }
+
+/* ---------- rolling figures ---------- */
+.roll-digits { --roll-h: 38px; display: inline-flex; align-items: center; font-variant-numeric: tabular-nums; white-space: pre; }
+.roll-col { display: inline-block; height: var(--roll-h); overflow: clip; }
+.roll-strip { display: flex; flex-direction: column; transform: translateY(calc(var(--d) * var(--roll-h) * -1)); transition: transform var(--t-roll) var(--ease-out); }
+.roll-strip > span { display: block; height: var(--roll-h); line-height: var(--roll-h); }
+.roll-strip > span::before { content: attr(data-n); }
+
+/* ---------- timeline ---------- */
+.block { transition: transform var(--t-press) var(--ease-out); }
+.block::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; box-shadow: 0 8px 20px rgb(0 0 0 / 18%); /* taste-skill-ignore: lifted block floats */ opacity: 0; transition: opacity var(--t-ui) var(--ease-out); pointer-events: none; }
+.block.is-lifted { transform: scale(1.02); z-index: 3; overflow: visible; }
+.block.is-lifted::before { opacity: 1; }
+.block.move-slot { z-index: 0; left: 0; right: 2px; opacity: 0.9; transition: none; }
+@keyframes block-flash {
+  from { opacity: 0.45; }
+  to { opacity: 0; }
+}
+.block.is-flash::after { content: ''; position: absolute; inset: 0; background: var(--accent); border-radius: inherit; pointer-events: none; animation: block-flash 400ms var(--ease-out) both; }
+
+/* ---------- command palette ---------- */
+@keyframes palette-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+.palette[open] { animation: palette-in var(--t-ui) var(--ease-out); }
+
+/* ---------- reduced motion: the finished state, at once ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .view.is-vt { view-transition-name: none; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}

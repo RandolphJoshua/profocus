@@ -343,6 +343,7 @@ export function SettingsView() {
         </div>
         <div className="setting-body stack">
         <dl className="shortcuts">
+          <dt><kbd>⌘</kbd>/<kbd>Ctrl</kbd> <kbd>K</kbd></dt><dd>Search, jump to a view, add a task or start focus</dd>
           <dt><kbd>N</kbd></dt><dd>Quick-add a task</dd>
           <dt><kbd>1</kbd>–<kbd>8</kbd></dt><dd>Switch view: Today, Week, Tasks, Goals, Seasons, Habits, Review, Settings</dd>
           <dt><kbd>Space</kbd></dt><dd>Start / pause the focus timer</dd>

@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { CommandPalette } from './components/CommandPalette';
 import { FocusTimer } from './components/FocusTimer';
-import { useStore } from './state/store';
+import { PlanDay } from './components/PlanDay';
+import { PlanWeek } from './components/PlanWeek';
+import { ToastProvider, useToast } from './components/Toaster';
+import { startOfWeek } from './lib/date';
+import { useStore, useToday } from './state/store';
 import { useSync } from './state/sync';
 import { useTimer } from './state/timer';
 import { FocusMode } from './views/FocusMode';
@@ -51,23 +57,62 @@ const viewFromHash = (): ViewId => {
   return isViewId(h) ? h : 'today';
 };
 
+const SUPPORTS_VIEW_TRANSITIONS = typeof document !== 'undefined' && 'startViewTransition' in document;
+const prefersReducedMotion = () => !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
+
+/** Run a state change inside a View Transition when the browser has them (and motion is allowed). */
+function withViewTransition(change: () => void) {
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+  if (!doc.startViewTransition || prefersReducedMotion()) {
+    change();
+    return;
+  }
+  doc.startViewTransition(() => flushSync(change));
+}
+
 export function App() {
-  const { state } = useStore();
+  return (
+    <ToastProvider>
+      <AppShell />
+    </ToastProvider>
+  );
+}
+
+function AppShell() {
+  const { state, dispatch } = useStore();
+  const today = useToday();
+  const toast = useToast();
   const timer = useTimer();
   const sync = useSync();
   const [view, setView] = useState<ViewId>(viewFromHash);
   // #focus is an overlay on top of whichever view was open before it.
   const [focus, setFocus] = useState(isFocusHash);
+  const [navigated, setNavigated] = useState(false);
+  const [palette, setPalette] = useState(false);
+  const [ritual, setRitual] = useState<'day' | 'week' | null>(null);
+  const viewRef = useRef(view);
   const quickAddRef = useRef<HTMLInputElement>(null);
   const inbox = state.tasks.filter((t) => !t.done && !t.date).length;
+
+  // Switching screens fades the new one in (View Transitions where available, a CSS keyframe otherwise).
+  function show(v: ViewId) {
+    viewRef.current = v;
+    withViewTransition(() => {
+      setView(v);
+      setFocus(false);
+      setNavigated(true);
+    });
+  }
 
   // View lives in the URL hash so reloads and back/forward work.
   useEffect(() => {
     const onHash = () => {
       if (isFocusHash()) setFocus(true);
       else {
-        setFocus(false);
-        setView(viewFromHash());
+        const next = viewFromHash();
+        if (next === viewRef.current) setFocus(false);
+        else show(next);
       }
     };
     window.addEventListener('hashchange', onHash);
@@ -75,8 +120,7 @@ export function App() {
   }, []);
   const go = (v: ViewId) => {
     window.location.hash = v;
-    setView(v);
-    setFocus(false);
+    show(v);
   };
 
   // Theme
@@ -89,6 +133,11 @@ export function App() {
   // Keyboard shortcuts (ignored while typing).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        if (!focus) setPalette((open) => !open);
+        return;
+      }
       const el = e.target as HTMLElement | null;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(el.tagName)) && e.key !== 'Escape') return;
@@ -111,6 +160,25 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  // A block removed in the editor (or anywhere) can be brought back from the toast.
+  const prevBlocks = useRef(state.blocks);
+  useEffect(() => {
+    const before = prevBlocks.current;
+    prevBlocks.current = state.blocks;
+    if (state.blocks.length !== before.length - 1) return;
+    const ids = new Set(state.blocks.map((b) => b.id));
+    const removed = before.filter((b) => !ids.has(b.id));
+    const [block] = removed;
+    if (removed.length !== 1 || !block || block.source === 'google') return;
+    toast('Block removed', { action: { label: 'Undo', run: () => dispatch({ type: 'ADD_BLOCK', block }) } });
+  }, [state.blocks, toast, dispatch]);
+
+  const openRitual = (kind: 'day' | 'week') => {
+    if (kind === 'day' && view !== 'today') go('today');
+    if (kind === 'week' && view !== 'week') go('week');
+    setRitual(kind);
+  };
+
   return (
     <div className={`app ${focus ? 'is-focus' : ''}`}>
       {focus && <FocusMode onExit={() => go(view)} />}
@@ -120,6 +188,10 @@ export function App() {
           <img src="/icon.svg" alt="" width={24} height={24} />
           <span>ProFocus</span>
         </div>
+        <button type="button" className="palette-btn" onClick={() => setPalette(true)} aria-haspopup="dialog">
+          <span>Search</span>
+          <kbd className="nav-kbd">{IS_MAC ? '⌘K' : 'Ctrl K'}</kbd>
+        </button>
         <nav aria-label="Main">
           <ul>
             {VIEWS.map((v, i) => (
@@ -143,15 +215,22 @@ export function App() {
       </aside>
 
       <main id="main" className={`main view-${view}`} hidden={focus}>
-        {view === 'today' && <TodayView quickAddRef={quickAddRef} />}
-        {view === 'week' && <WeekView />}
-        {view === 'tasks' && <TasksView />}
-        {view === 'goals' && <GoalsView />}
-        {view === 'seasons' && <SeasonsView />}
-        {view === 'habits' && <HabitsView />}
-        {view === 'review' && <ReviewView />}
-        {view === 'settings' && <SettingsView />}
+        <div key={view} className={`view ${navigated ? 'is-nav' : ''} ${SUPPORTS_VIEW_TRANSITIONS ? 'is-vt' : ''}`}>
+          {view === 'today' && <TodayView quickAddRef={quickAddRef} />}
+          {view === 'week' && <WeekView />}
+          {view === 'tasks' && <TasksView />}
+          {view === 'goals' && <GoalsView />}
+          {view === 'seasons' && <SeasonsView />}
+          {view === 'habits' && <HabitsView />}
+          {view === 'review' && <ReviewView />}
+          {view === 'settings' && <SettingsView />}
+        </div>
       </main>
+      {palette && !focus && (
+        <CommandPalette views={VIEWS} onGo={(v) => isViewId(v) && go(v)} onRitual={openRitual} onClose={() => setPalette(false)} />
+      )}
+      {ritual === 'day' && view === 'today' && <PlanDay onClose={() => setRitual(null)} />}
+      {ritual === 'week' && view === 'week' && <PlanWeek week={startOfWeek(today, state.settings.weekStartsOn)} onClose={() => setRitual(null)} />}
     </div>
   );
 }

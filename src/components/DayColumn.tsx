@@ -160,6 +160,8 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
                 const top = (Math.max(b.start, dayStart) - dayStart) * pxPerMin;
         const h = Math.max((Math.min(b.end, dayEnd) - Math.max(b.start, dayStart)) * pxPerMin, 14);
         const short = b.end - b.start <= 30;
+        // Too short for a full line plus padding: one centred line, no time.
+        const tiny = h < 24;
         const external = b.source === 'google';
         const routine = !!b.routineId;
         const fixed = external || routine;
@@ -169,7 +171,7 @@ export function DayColumn({ date, hourHeight, isToday, onCreate, onSelect }: Day
           <Fragment key={b.id}>
           {lifted === b.id && <div className="block ghost move-slot" style={{ top, height: h }} aria-hidden />}
           <div
-            className={`block kind-${b.kind} ${task?.done ? 'is-done' : ''} ${short ? 'is-short' : ''} ${external ? 'is-external' : ''} ${routine ? 'is-routine' : ''} ${lifted === b.id ? 'is-lifted' : ''} ${flashId === b.id ? 'is-flash' : ''}`}
+            className={`block kind-${b.kind} ${task?.done ? 'is-done' : ''} ${short ? 'is-short' : ''} ${tiny ? 'is-tiny' : ''} ${external ? 'is-external' : ''} ${routine ? 'is-routine' : ''} ${lifted === b.id ? 'is-lifted' : ''} ${flashId === b.id ? 'is-flash' : ''}`}
             style={{ top, height: h, '--c': project?.color, ...side } as CSSProperties}
             onPointerDown={fixed ? (e) => e.stopPropagation() : (e) => startDrag(e, { mode: 'move', id: b.id, grabOffset: minAt(e.clientY) - b.start, moved: false })}
             onClick={fixed ? () => onSelect(b) : undefined}

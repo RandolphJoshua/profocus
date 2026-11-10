@@ -431,11 +431,15 @@ code { font: inherit; font-size: var(--fs-small); background: var(--surface); bo
     flex-direction: row; padding: 4px 8px calc(4px + env(safe-area-inset-bottom)); border-top: 1px solid var(--sidebar-active);
   }
   .brand, .sidebar-timer, .nav-kbd, .nav-count { display: none; }
-  .sidebar nav { flex: 1; }
+  .sidebar nav { flex: 1; min-width: 0; }
   .sidebar nav ul { flex-direction: row; justify-content: space-around; }
-  .nav-btn { flex-direction: column; justify-content: center; height: 48px; gap: 2px; padding: 0 8px; font-size: 11px; }
+  .nav-btn { flex-direction: column; justify-content: center; height: 48px; gap: 2px; padding: 0 4px; font-size: 11px; }
   .nav-label { flex: none; }
   .main { margin: 0; padding: 20px 16px 96px; border: 0; border-radius: 0; min-height: 100vh; }
+  /* Eight labels do not fit under 390px (iPhone mini / SE): icons only there, names kept for screen readers. */
+  @media (max-width: 389px) {
+    .nav-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  }
   .greeting { font-size: 40px; }
   h1 { font-size: 28px; line-height: 34px; }
   .today-head { padding-top: 0; }

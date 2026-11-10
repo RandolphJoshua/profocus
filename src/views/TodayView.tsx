@@ -27,6 +27,9 @@ function greeting(h: number) {
   return 'Good evening';
 }
 
+/** Pixels per hour on Today's timeline: room for a 30-minute block's title and time. */
+const TIMELINE_HOUR = 64;
+
 export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> }) {
   const { state, dispatch } = useStore();
   const { enabled: aiEnabled } = useCoach();
@@ -222,8 +225,8 @@ export function TodayView({ quickAddRef }: { quickAddRef: Ref<HTMLInputElement> 
           </div>
           <div className="timeline-scroll" ref={timelineRef}>
             <div className="timeline-grid">
-              <TimeGutter hourHeight={52} />
-              <DayColumn date={today} hourHeight={52} isToday onCreate={(d, s, e) => setDraft(newDraft(d, s, e))} onSelect={(b) => setDraft(b)} />
+              <TimeGutter hourHeight={TIMELINE_HOUR} />
+              <DayColumn date={today} hourHeight={TIMELINE_HOUR} isToday onCreate={(d, s, e) => setDraft(newDraft(d, s, e))} onSelect={(b) => setDraft(b)} />
             </div>
           </div>
         </section>

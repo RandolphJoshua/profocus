@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { PlanWeek } from '../components/PlanWeek';
 import { WeekPriorities } from '../components/WeekPriorities';
 import { BlockEditor, newDraft, type BlockDraft } from '../components/BlockEditor';
@@ -15,6 +15,15 @@ import { byPriority } from './TodayView';
 /** Pixels per hour on the week grid: tall enough that a 30-minute block shows its title and time. */
 const HOUR = 72;
 
+/** Phones get one day at a time: seven columns at 390px leave every block unreadable. */
+const NARROW = '(max-width: 760px)';
+const subscribeNarrow = (cb: () => void) => {
+  const mq = window.matchMedia?.(NARROW);
+  mq?.addEventListener?.('change', cb);
+  return () => mq?.removeEventListener?.('change', cb);
+};
+const isNarrow = () => !!window.matchMedia?.(NARROW).matches;
+
 export function WeekView() {
   const { state } = useStore();
   const { enabled: aiEnabled } = useCoach();
@@ -26,6 +35,10 @@ export function WeekView() {
   const [planning, setPlanning] = useState(false);
   const days = weekDays(weekStart);
   const end = days[6] ?? weekStart;
+  const narrow = useSyncExternalStore(subscribeNarrow, isNarrow, () => false);
+  const [pickedDay, setPickedDay] = useState(today);
+  const phoneDay = days.includes(pickedDay) ? pickedDay : days.includes(today) ? today : weekStart;
+  const shownDays = narrow ? [phoneDay] : days;
 
   const scheduled = new Set(state.blocks.map((b) => b.taskId).filter(Boolean));
   const toSchedule = state.tasks
@@ -85,24 +98,45 @@ export function WeekView() {
 
         <div className="card week-cal">
           <div className="week-scroll" ref={scrollRef}>
-            <div className="week-head">
-              <span />
-              {days.map((d) => {
-                const plan = state.days[d];
-                const mins = focusMinutesOn(state.sessions, d);
-                return (
-                  <div key={d} className={`week-day-head ${d === today ? 'is-today' : ''}`}>
+            {narrow ? (
+              <div className="day-strip" role="tablist" aria-label="Day">
+                {days.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    role="tab"
+                    aria-selected={d === phoneDay}
+                    className={`day-tab ${d === phoneDay ? 'is-on' : ''} ${d === today ? 'is-today' : ''}`}
+                    onClick={() => setPickedDay(d)}
+                  >
                     <span className="wd">{shortWeekday(d)}</span>
                     <span className="dn num">{Number(d.slice(8))}</span>
-                    {plan?.highlight && <span className={`hl ${plan.highlightDone ? 'is-done' : ''}`} title={plan.highlight}>{plan.highlight}</span>}
-                    {mins > 0 && <span className="fm num">{formatDuration(mins)}</span>}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="week-body">
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="week-head">
+                <span />
+                {days.map((d) => {
+                  const plan = state.days[d];
+                  const mins = focusMinutesOn(state.sessions, d);
+                  return (
+                    <div key={d} className={`week-day-head ${d === today ? 'is-today' : ''}`}>
+                      <span className="wd">{shortWeekday(d)}</span>
+                      <span className="dn num">{Number(d.slice(8))}</span>
+                      {plan?.highlight && <span className={`hl ${plan.highlightDone ? 'is-done' : ''}`} title={plan.highlight}>{plan.highlight}</span>}
+                      {mins > 0 && <span className="fm num">{formatDuration(mins)}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {narrow && state.days[phoneDay]?.highlight && (
+              <p className="day-strip-hl">Highlight: <span className={state.days[phoneDay]?.highlightDone ? 'is-done' : ''}>{state.days[phoneDay]?.highlight}</span></p>
+            )}
+            <div className={`week-body ${narrow ? 'is-narrow' : ''}`}>
               <TimeGutter hourHeight={HOUR} />
-              {days.map((d) => (
+              {shownDays.map((d) => (
                 <DayColumn key={d} date={d} hourHeight={HOUR} isToday={d === today} onCreate={(dd, s, e) => setDraft(newDraft(dd, s, e))} onSelect={(b) => setDraft(b)} />
               ))}
             </div>
